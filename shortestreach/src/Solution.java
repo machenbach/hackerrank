@@ -114,17 +114,12 @@ public class Solution {
 	}
 	
 	public void print(Node s) {
-		
-		int id = s.getId();
-		int n = id + 1;
-		while (n != id) {
-			if (n >= nodes.length) {
-				n = 0;
-				if (n == id) break;
+		for (Node n : nodes) {
+			if (n.getPath() != 0) {
+				System.out.print(n.getPath() + " ");
 			}
-			System.out.print(nodes[n].getPath() + " ");
-			n++;
 		}
+		System.out.println();
 	}
 
 	public static void main(String[] args) {
