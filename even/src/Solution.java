@@ -41,6 +41,12 @@ public class Solution {
 		public int getId() {
 			return id;
 		}
+
+		@Override
+		public String toString() {
+			return String.format("<%s>", id);
+		}
+		
 		
 	}
 	
@@ -55,10 +61,6 @@ public class Solution {
 			cnt += c.getNodeCnt();
 		}
 		n.setNodeCnt(cnt);
-	}
-	
-	public void childCnt() {
-		childCount(nodes[1]);
 	}
 	
 	// init the node array
@@ -78,6 +80,7 @@ public class Solution {
 			int p = in.nextInt();
 			nodes[p].addChild(nodes[c]);
 		}
+		childCount(nodes[1]);
 	}
 
 	/*
@@ -88,21 +91,29 @@ public class Solution {
 	 * up the tree, meaning that the root node
 	 */
 
-	// priority queue will maintain the smallest node count >= 2
+	// Only sub-trees with even numbes of nodes can take part in this
 	PriorityQueue<Node> active;
 	
 	void initActive() {
 		active = new PriorityQueue<>((Node n1, Node n2) -> Integer.compare(n1.getNodeCnt(), n2.getNodeCnt()));
 		for (int i = 1; i <= N; i++) {
-			if (nodes[i].getNodeCnt() > 1) {
+			if (nodes[i].getNodeCnt() % 2 == 0) {
 				active.add(nodes[i]);
 			}
 		}
 	}
 	
+	void removeChildren(Node n) {
+		for (Node c : n.getChildren()) {
+			removeChildren(c);
+		}
+		active.remove(n);
+	}
+	
 	// we are cutting tree at n.  Fix the counts of the parents, and re-do the priority queue
 	void fixCounts(Node n) {
 		int cnt = n.getNodeCnt();
+
 		Node p = n.getParent();
 		while (p != null) {
 			active.remove(p);
@@ -119,8 +130,10 @@ public class Solution {
 			Node n = active.poll();
 			cuts++;
 			fixCounts(n);
+			removeChildren(n);
 		}
-		return cuts;
+		// This actually counts the subtrees.  The number of cuts is one less
+		return cuts-1;
 		
 	}
 	
