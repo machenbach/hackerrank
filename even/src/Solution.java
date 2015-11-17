@@ -1,5 +1,6 @@
 import java.util.ArrayList;
 import java.util.List;
+import java.util.PriorityQueue;
 import java.util.Scanner;
 
 
@@ -21,22 +22,12 @@ public class Solution {
 			n.parent = this;
 		}
 		
-		public void removeChild(Node n) {
-			// remove the child, and adjust the count
-			nodeCnt -= n.getNodeCnt();
-			children.remove(n);
-		}
-		
 		public List<Node> getChildren() {
 			return children;
 		}
 
 		public Node getParent() {
 			return parent;
-		}
-
-		public void setParent(Node parent) {
-			this.parent = parent;
 		}
 
 		public int getNodeCnt() {
@@ -70,9 +61,6 @@ public class Solution {
 		childCount(nodes[1]);
 	}
 	
-	// traverse the tree, cutting lowest even number
-	
-	
 	// init the node array
 	
 	Node[] nodes;
@@ -82,6 +70,7 @@ public class Solution {
 			nodes[i] = new Node(i);
 		}
 	}
+
 	// initialize the tree from scanner
 	void initTree(Scanner in) {
 		for (int i = 0; i < M; i++) {
@@ -91,8 +80,67 @@ public class Solution {
 		}
 	}
 
+	/*
+	 * algorithm as follows: for the tree to able to break subtrees of even
+	 * numbers of nodes, the root node must have an even number of children.
+	 * Algorithm uses a greedy approach, finding the smallest number of nodes
+	 * that are even, and removing that tree. The number of nodes removed goes
+	 * up the tree, meaning that the root node
+	 */
+
+	// priority queue will maintain the smallest node count >= 2
+	PriorityQueue<Node> active;
+	
+	void initActive() {
+		active = new PriorityQueue<>((Node n1, Node n2) -> Integer.compare(n1.getNodeCnt(), n2.getNodeCnt()));
+		for (int i = 1; i <= N; i++) {
+			if (nodes[i].getNodeCnt() > 1) {
+				active.add(nodes[i]);
+			}
+		}
+	}
+	
+	// we are cutting tree at n.  Fix the counts of the parents, and re-do the priority queue
+	void fixCounts(Node n) {
+		int cnt = n.getNodeCnt();
+		Node p = n.getParent();
+		while (p != null) {
+			active.remove(p);
+			p.setNodeCnt(p.getNodeCnt() - cnt);
+			active.add(p);
+			p = p.getParent();
+		}
+	}
+	
+	public int countCuts() {
+		int cuts = 0;
+		initActive();
+		while (!active.isEmpty()) {
+			Node n = active.poll();
+			cuts++;
+			fixCounts(n);
+		}
+		return cuts;
+		
+	}
+	
+	public Solution(int n, int m) {
+		N = n;
+		M = m;
+	}
+	
+
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
+		Scanner in = new Scanner(System.in);
+		int n = in.nextInt();
+		int m = in.nextInt();
+		
+		Solution s = new Solution(n, m);
+		s.initNodes();
+		s.initTree(in);
+		in.close();
+		
+		System.out.println(s.countCuts());
 
 	}
 
