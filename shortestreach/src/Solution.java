@@ -40,13 +40,13 @@ public class Solution {
 			return -1;
 		}
 		
-		int path = -1;
+		long path = -1;
 		
 		public boolean notSeen() {
 			return path == -1;
 		}
 		
-		public boolean setPath(int w) {
+		public boolean setPath(long w) {
 			// always set the shortest path
 			if (path == -1) {
 				path = w;
@@ -58,7 +58,7 @@ public class Solution {
 			return set;
 		}
 		
-		public int getPath() {
+		public long getPath() {
 			return path;
 		}
 	}
@@ -66,7 +66,7 @@ public class Solution {
 	public void traverse(Node S) {
 		Queue<Node> active = 
 				new PriorityQueue<Solution.Node>((Node n1, Node n2) 
-						-> Integer.compare(n1.getPath(), n2.getPath()));
+						-> Long.compare(n1.getPath(), n2.getPath()));
 		
 		active .add(S);
 		S.setPath(0);
@@ -131,7 +131,6 @@ public class Solution {
 			s.init(in);
 			s.traverse(s.getStart());
 			s.print(s.getStart());
-			System.out.println();
 		}
 		
 		in.close();
