@@ -29,6 +29,10 @@ public class Solution {
 		public Node getParent() {
 			return parent;
 		}
+		
+		public void setParent(Node n) {
+			parent = n;
+		}
 
 		public int getNodeCnt() {
 			return nodeCnt;
@@ -44,7 +48,18 @@ public class Solution {
 
 		@Override
 		public String toString() {
-			return String.format("<%s>", id);
+			return String.format("<%s:%s>", id, nodeCnt);
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			// TODO Auto-generated method stub
+			return id == ((Node)obj).id;
+		}
+
+		@Override
+		public int hashCode() {
+			return Integer.hashCode(id);
 		}
 		
 		
@@ -96,8 +111,8 @@ public class Solution {
 	
 	void initActive() {
 		active = new PriorityQueue<>((Node n1, Node n2) -> Integer.compare(n1.getNodeCnt(), n2.getNodeCnt()));
-		for (int i = 1; i <= N; i++) {
-			if (nodes[i].getNodeCnt() % 2 == 0) {
+		for (int i = 2; i <= N; i++) {
+			if (nodes[i].getNodeCnt() > 1 && nodes[i].getNodeCnt() % 2 == 0) {
 				active.add(nodes[i]);
 			}
 		}
@@ -111,30 +126,60 @@ public class Solution {
 	}
 	
 	// we are cutting tree at n.  Fix the counts of the parents, and re-do the priority queue
-	void fixCounts(Node n) {
+	void fixParents(Node n) {
 		int cnt = n.getNodeCnt();
 
 		Node p = n.getParent();
+		p.getChildren().remove(n);
 		while (p != null) {
 			active.remove(p);
 			p.setNodeCnt(p.getNodeCnt() - cnt);
 			active.add(p);
 			p = p.getParent();
 		}
+		n.setParent(null);
+
 	}
+	
+	List<Node> cutTrees = new ArrayList<>();
 	
 	public int countCuts() {
 		int cuts = 0;
 		initActive();
 		while (!active.isEmpty()) {
 			Node n = active.poll();
+			cutTrees.add(n);
 			cuts++;
-			fixCounts(n);
+			fixParents(n);
 			removeChildren(n);
+			printTree(n);
+			System.out.println();
+			printTree();
 		}
 		// This actually counts the subtrees.  The number of cuts is one less
 		return cuts-1;
 		
+	}
+	
+	public void printCuts() {
+		for (Node n : cutTrees) {
+			System.out.println(n);
+		}
+	}
+	
+	public void printTree(Node n, String prefix) {
+		System.out.println(prefix + n);
+		for (Node c : n.getChildren()) {
+			printTree(c, prefix + "   ");
+		}
+	}
+	
+	public void printTree(Node n) {
+		printTree(n, "");
+	}
+	
+	public void printTree() {
+		printTree(nodes[1]);
 	}
 	
 	public Solution(int n, int m) {
@@ -152,8 +197,10 @@ public class Solution {
 		s.initNodes();
 		s.initTree(in);
 		in.close();
+		s.printTree();
 		
 		System.out.println(s.countCuts());
+		s.printCuts();
 
 	}
 
