@@ -106,7 +106,7 @@ public class Solution {
 	 * up the tree, meaning that the root node
 	 */
 
-	// Only sub-trees with even numbes of nodes can take part in this
+	// Only sub-trees with even numbers of nodes can take part in this
 	PriorityQueue<Node> active;
 	
 	void initActive() {
@@ -130,7 +130,9 @@ public class Solution {
 		int cnt = n.getNodeCnt();
 
 		Node p = n.getParent();
-		p.getChildren().remove(n);
+		if (p != null) {
+			p.getChildren().remove(n);
+		}
 		while (p != null) {
 			active.remove(p);
 			p.setNodeCnt(p.getNodeCnt() - cnt);
@@ -152,9 +154,9 @@ public class Solution {
 			cuts++;
 			fixParents(n);
 			removeChildren(n);
-			printTree(n);
-			System.out.println();
-			printTree();
+			// printTree(n);
+			//System.out.println();
+			// printTree();
 		}
 		// This actually counts the subtrees.  The number of cuts is one less
 		return cuts-1;
@@ -197,10 +199,10 @@ public class Solution {
 		s.initNodes();
 		s.initTree(in);
 		in.close();
-		s.printTree();
+		//s.printTree();
 		
 		System.out.println(s.countCuts());
-		s.printCuts();
+		//s.printCuts();
 
 	}
 
