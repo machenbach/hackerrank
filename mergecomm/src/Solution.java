@@ -1,46 +1,112 @@
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Scanner;
-import java.util.Set;
 
-class Disjoint<T> {
-	Map<T, Set<T>> sets;
 
-	public Disjoint() {
-		sets = new HashMap<>();
-	}
 
-	public void makeSet(T n) {
-		Set<T> s = new HashSet<>();
-		s.add(n);
-		sets.put(n, s);
-	}
 
-	public Set<T> findSet(T n) {
-		return sets.get(n);
-	}
-
-	public void union(T n1, T n2) {
-		Set<T> s1 = findSet(n1);
-		Set<T> s2 = findSet(n2);
-		s1.addAll(s2);
-		for (T n : s2) {
-			sets.put(n, s1);
+/**
+ * @author mike
+ *
+ * Disjoint set based solely on integers, and optimized for that
+ */
+class DisjointInt {
+	
+	class DsNode {
+		DsNode parent;
+		int rank;
+		int size;
+		int id;
+		
+		public DsNode(int id) {
+			parent = this;
+			rank = 0;
+			size = 1;
+			this.id = id;
 		}
+
+		public DsNode getParent() {
+			return parent;
+		}
+
+		public void setParent(DsNode parent) {
+			this.parent = parent;
+		}
+
+		public int getRank() {
+			return rank;
+		}
+
+		public void setRank(int rank) {
+			this.rank = rank;
+		}
+
+		public int getSize() {
+			return size;
+		}
+
+		public void setSize(int size) {
+			this.size = size;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("<%s>", id);
+		}
+		
+		
+	}
+	
+	DsNode[] sets;
+	
+	
+	public DisjointInt(int n) {
+		sets = new DsNode[n + 1];
+		for (int i = 1; i <= n; i++) {
+			sets[i] = new DsNode(i);
+		}
+	}
+	
+	DsNode findSet(DsNode n) {
+		if (n != n.getParent()) {
+			n.setParent(findSet(n.getParent()));
+		}
+		return n.getParent();
+	}
+	
+	public DsNode findSet(int i) {
+		return findSet(sets[i]);
+	}
+	
+	void link (DsNode x, DsNode y) {
+		if (x == y) return;
+		
+		if (x.getRank() > y.getRank()) {
+			y.setParent(x);
+			x.setSize(x.getSize() + y.getSize());
+		}
+		else {
+			x.setParent(y);
+			y.setSize(x.getSize() + y.getSize());
+			if (x.getRank() == y.getRank()) {
+				y.setRank(y.getRank() + 1);
+			}
+		}
+	}
+	
+	void union(DsNode x, DsNode y) {
+		link(findSet(x), findSet(y));
+	}
+	
+	public void union(int x, int y) {
+		union(sets[x], sets[y]);
 	}
 
 }
-
 public class Solution {
-	Disjoint<Integer> d;
+	DisjointInt d;
 
 	public Solution(int N) {
-		d = new Disjoint<>();
-		for (int i = 1; i <= N; i++) {
-			d.makeSet(i);
-		}
+		d = new DisjointInt(N);
 	}
 
 	public void merge(int i, int j) {
@@ -48,7 +114,7 @@ public class Solution {
 	}
 
 	public int query(int i) {
-		return d.findSet(i).size();
+		return d.findSet(i).getSize();
 	}
 	
 
