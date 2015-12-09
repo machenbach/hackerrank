@@ -4,7 +4,7 @@ import java.util.PriorityQueue;
 import java.util.Scanner;
 
 
-public class Solution {
+public class Solution2 {
 	
 	class Node {
 		int id;
@@ -98,33 +98,6 @@ public class Solution {
 		childCount(nodes[1]);
 	}
 
-	/*
-	 * algorithm as follows: for the tree to able to break subtrees of even
-	 * numbers of nodes, the root node must have an even number of children.
-	 * Algorithm uses a greedy approach, finding the smallest number of nodes
-	 * that are even, and removing that tree. The number of nodes removed goes
-	 * up the tree, meaning that the root node
-	 */
-
-	// Only sub-trees with even numbers of nodes can take part in this
-	PriorityQueue<Node> active;
-	
-	void initActive() {
-		active = new PriorityQueue<>((Node n1, Node n2) -> Integer.compare(n1.getNodeCnt(), n2.getNodeCnt()));
-		for (int i = 2; i <= N; i++) {
-			if (nodes[i].getNodeCnt() > 1 && nodes[i].getNodeCnt() % 2 == 0) {
-				active.add(nodes[i]);
-			}
-		}
-	}
-	
-	void removeChildren(Node n) {
-		for (Node c : n.getChildren()) {
-			removeChildren(c);
-		}
-		active.remove(n);
-	}
-	
 	// we are cutting tree at n.  Fix the counts of the parents, and re-do the priority queue
 	void fixParents(Node n) {
 		int cnt = n.getNodeCnt();
@@ -134,9 +107,7 @@ public class Solution {
 			p.getChildren().remove(n);
 		}
 		while (p != null) {
-			active.remove(p);
 			p.setNodeCnt(p.getNodeCnt() - cnt);
-			active.add(p);
 			p = p.getParent();
 		}
 		n.setParent(null);
@@ -145,22 +116,37 @@ public class Solution {
 	
 	List<Node> cutTrees = new ArrayList<>();
 	
-	public int countCuts() {
-		int cuts = 0;
-		initActive();
-		while (!active.isEmpty()) {
-			Node n = active.poll();
-			cutTrees.add(n);
-			cuts++;
+
+	// count the cuts in node n and all it's sub trees
+	int cuts(Node n) {
+		if (n.getNodeCnt() == 2) {
 			fixParents(n);
-			removeChildren(n);
-			// printTree(n);
-			//System.out.println();
-			// printTree();
+			return 1;
 		}
-		// This actually counts the subtrees.  The number of cuts is one less
-		return cuts-1;
 		
+		int t = 0;
+		for (Node c : new ArrayList<>(n.getChildren())) {
+			t += cuts(c);
+		}
+		if (t == 0 && n.getNodeCnt() % 2 == 0) {
+			fixParents(n);
+			return 1;
+		}
+		
+		return t;
+	}
+	
+	public int countCuts() {
+		int tot = 0;
+		int t = 0;
+		do {
+			t = 0;
+			for (Node c : new ArrayList<>(nodes[1].getChildren())) {
+				t += cuts(c);
+			}
+			tot += t;
+		} while (t != 0);
+		return tot;
 	}
 	
 	public void printCuts() {
@@ -184,7 +170,7 @@ public class Solution {
 		printTree(nodes[1]);
 	}
 	
-	public Solution(int n, int m) {
+	public Solution2(int n, int m) {
 		N = n;
 		M = m;
 	}
@@ -195,7 +181,7 @@ public class Solution {
 		int n = in.nextInt();
 		int m = in.nextInt();
 		
-		Solution s = new Solution(n, m);
+		Solution2 s = new Solution2(n, m);
 		s.initNodes();
 		s.initTree(in);
 		in.close();

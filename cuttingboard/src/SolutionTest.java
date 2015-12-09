@@ -3,12 +3,12 @@ import java.io.FileNotFoundException;
 
 import org.junit.Test;
 
-public class Tester {
+public class SolutionTest {
 
 	@Test
-	public void test() throws FileNotFoundException  {
+	public void test() throws FileNotFoundException {
 		System.setIn(new FileInputStream("test.txt"));
-		Solution2.main(null);
+		Solution.main(null);
 	}
 
 }

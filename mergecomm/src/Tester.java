@@ -6,9 +6,9 @@ import org.junit.Test;
 public class Tester {
 
 	@Test
-	public void test() throws FileNotFoundException  {
+	public void test() throws FileNotFoundException {
 		System.setIn(new FileInputStream("test.txt"));
-		Solution2.main(null);
+		Solution.main(null);
 	}
 
 }
