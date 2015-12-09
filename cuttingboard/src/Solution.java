@@ -2,6 +2,40 @@ import java.math.BigInteger;
 import java.util.PriorityQueue;
 import java.util.Scanner;
 
+
+class CutQueue extends PriorityQueue<Integer> {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	
+	long total;
+	
+	public CutQueue(int n) {
+		super(n, (Integer i, Integer j) -> Integer.compare(j, i));
+	}
+
+
+	@Override
+	public boolean add(Integer e) {
+		total += e;
+		return super.add(e);
+	}
+
+	@Override
+	public Integer poll() {
+		Integer e = super.poll();
+		total -= e;
+		return e;
+	}
+
+	public long getTotal() {
+		return total;
+	}
+	
+	
+	
+}
 public class Solution {
 	// Horizontal, vertical (m, n in the problem)
 	int h;
@@ -11,43 +45,41 @@ public class Solution {
 	int hCuts = 1;
 	int vCuts = 1;
 	
+	
 	// the cost (sorted highest to lowest)
-	PriorityQueue<Integer> hCosts;
-	PriorityQueue<Integer> vCosts;
+	CutQueue hCosts;
+	CutQueue vCosts;
 	
 	public Solution(int m, int n) {
 		h = m;
 		v = n;
 
-		hCosts = new PriorityQueue<Integer>(h, (Integer i, Integer j) -> Integer.compare(j, i));
-		vCosts = new PriorityQueue<Integer>(v, (Integer i, Integer j) -> Integer.compare(j, i));
+		hCosts = new CutQueue(h);
+		vCosts = new CutQueue(v);
 	}
 	
 	public void initCosts(Scanner in) {
 		for (int i = 1; i < h; i++) {
-			hCosts.add(in.nextInt());
+			int n = in.nextInt();
+			hCosts.add(n);
 		}
 		
 		for (int i = 1; i < v; i++) {
-			vCosts.add(in.nextInt());
+			int n = in.nextInt();
+			vCosts.add(n);
 		}
+		
 	}
 	
 	public int singleCost() {
-		// find the most expensive cut
-		int vCut = vCosts.isEmpty() ? Integer.MIN_VALUE : vCosts.peek() * hCuts;
-		int hCut = hCosts.isEmpty() ? Integer.MIN_VALUE : hCosts.peek() * vCuts;
-		if (vCut > hCut) {
-			// take the vertical cut
-			vCosts.poll(); // remove this cost
-			vCuts++; // add a vertical cut
-			return vCut;
+		// from the currently most expensive q
+		if (vCosts.getTotal() * vCuts > hCosts.getTotal() * hCuts) {
+			hCuts++;
+			return vCosts.isEmpty() ? 0 : vCosts.poll() * vCuts;
 		}
 		else {
-			hCosts.poll(); // remove this cost
-			hCuts++; // add a horizontal cut
-			return hCut;
-			
+			vCuts++;
+			return hCosts.isEmpty() ? 0 : hCosts.poll() * hCuts;
 		}
 	}
 	
