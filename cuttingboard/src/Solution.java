@@ -37,7 +37,7 @@ public class Solution {
 		// find the most expensive cut
 		int vCut = vCosts.isEmpty() ? Integer.MIN_VALUE : vCosts.peek() * hCuts;
 		int hCut = hCosts.isEmpty() ? Integer.MIN_VALUE : hCosts.peek() * vCuts;
-		if (vCut >= hCut) {
+		if (vCut > hCut) {
 			// take the vertical cut
 			vCosts.poll(); // remove this cost
 			vCuts++; // add a vertical cut
