@@ -2,96 +2,91 @@ import java.math.BigInteger;
 import java.util.PriorityQueue;
 import java.util.Scanner;
 
-
-class CutQueue extends PriorityQueue<Integer> {
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
-	
-	long total;
-	
-	public CutQueue(int n) {
-		super(n, (Integer i, Integer j) -> Integer.compare(j, i));
-	}
-
-
-	@Override
-	public boolean add(Integer e) {
-		total += e;
-		return super.add(e);
-	}
-
-	@Override
-	public Integer poll() {
-		Integer e = super.poll();
-		total -= e;
-		return e;
-	}
-
-	public long getTotal() {
-		return total;
-	}
-	
-	
-	
-}
 public class Solution {
-	// Horizontal, vertical (m, n in the problem)
-	int h;
-	int v;
 	
-	// Number of cuts in each direction
-	int hCuts = 1;
-	int vCuts = 1;
+	long h;
+	long v;
 	
+	long hCuts = 1;
+	long vCuts = 1;
 	
-	// the cost (sorted highest to lowest)
-	CutQueue hCosts;
-	CutQueue vCosts;
+	PriorityQueue<Cut> costs;
+	
+	class Cut implements Comparable<Cut> {
+		long cost;
+		boolean vertical;
+		
+		public Cut (int cost, boolean vertical) {
+			this.cost = cost;
+			this.vertical = vertical;
+		}
+
+		@Override
+		public int compareTo(Cut o) {
+			return Long.compare(o.cost, cost);
+		}
+
+		public boolean isVertical() {
+			return vertical;
+		}
+
+		public long getCost() {
+			return cost * (vertical ? vCuts : hCuts);
+		}
+
+		@Override
+		public String toString() {
+			return String.format("<%s:%s>", cost, vertical ? "v" : "h");
+		}
+		
+		
+		
+	}
+
 	
 	public Solution(int m, int n) {
 		h = m;
 		v = n;
 
-		hCosts = new CutQueue(h);
-		vCosts = new CutQueue(v);
+		costs = new PriorityQueue<>();
 	}
-	
+
 	public void initCosts(Scanner in) {
 		for (int i = 1; i < h; i++) {
 			int n = in.nextInt();
-			hCosts.add(n);
+			costs.add(new Cut(n, false));
 		}
 		
 		for (int i = 1; i < v; i++) {
 			int n = in.nextInt();
-			vCosts.add(n);
+			costs.add(new Cut(n, true));
 		}
 		
 	}
 	
-	public int singleCost() {
-		// from the currently most expensive q
-		if (vCosts.getTotal() * vCuts > hCosts.getTotal() * hCuts) {
+	public long singleCost() {
+		Cut c = costs.poll();
+		long cost = c.getCost();
+		if (c.isVertical()) {
 			hCuts++;
-			return vCosts.isEmpty() ? 0 : vCosts.poll() * vCuts;
 		}
 		else {
 			vCuts++;
-			return hCosts.isEmpty() ? 0 : hCosts.poll() * hCuts;
 		}
+		return cost;
 	}
 	
 	public int cost() {
 		BigInteger total = BigInteger.valueOf(0);
 		BigInteger modfac = BigInteger.valueOf(1000000007);
-		while (!(hCosts.isEmpty() && vCosts.isEmpty())) {
+		while (!costs.isEmpty()) {
 			total = total.add(BigInteger.valueOf(singleCost()));
 		}
 		return total.mod(modfac).intValue();
 	}
  
+
+	
 	public static void main(String[] args) {
 		Scanner in = new Scanner(System.in);
 		int t = in.nextInt();
