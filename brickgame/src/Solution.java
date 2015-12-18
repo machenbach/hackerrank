@@ -9,9 +9,24 @@ public class Solution {
 	
 	int[] bricks;
 	
-	class Node {
+	static class Node {
 		int p;
 		int pos;
+		int take;
+		Node child;
+		
+		static Map<Node, Node> nodes = new HashMap<>(); 
+		
+		static Node node(int p, int pos) {
+			Node n = new Node(p, pos);
+			Node r = nodes.get(n);
+			if (r == null) {
+				nodes.put(n, n);
+				r = n;
+			}
+			return r;
+		}
+		
 		
 		public Node(int p, int pos) {
 			this.p = p;
@@ -26,6 +41,22 @@ public class Solution {
 			return pos;
 		}
 		
+		public int getTake() {
+			return take;
+		}
+
+		public void setTake(int take) {
+			this.take = take;
+		}
+
+		public Node getChild() {
+			return child;
+		}
+
+		public void setChild(Node child) {
+			this.child = child;
+		}
+
 		@Override
 		public String toString() {
 			return String.format("(%s, %s)", p, pos);
@@ -33,12 +64,7 @@ public class Solution {
 
 		@Override
 		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + getOuterType().hashCode();
-			result = prime * result + p;
-			result = prime * result + pos;
-			return result;
+			return Integer.hashCode(p + pos);
 		}
 
 		@Override
@@ -50,8 +76,6 @@ public class Solution {
 			if (getClass() != obj.getClass())
 				return false;
 			Node other = (Node) obj;
-			if (!getOuterType().equals(other.getOuterType()))
-				return false;
 			if (p != other.p)
 				return false;
 			if (pos != other.pos)
@@ -59,9 +83,6 @@ public class Solution {
 			return true;
 		}
 
-		private Solution getOuterType() {
-			return Solution.this;
-		}
 	}
 	
 	Map<Node, long[]> seen;
@@ -82,13 +103,8 @@ public class Solution {
 	// a seen node exists in the seen map, but has no value (value is null)
 	// a closed node exists in the seen map, with an array value
 	
-	void printEntry (String pre, Node n, long[] a) {
-		System.out.println(String.format("%s -- %s: %s, %s", pre, n, a[0], a[1]));
-	}
-	
 	// process the node.
 	void process(Node n) {
-		System.out.println("Process: " + n);
 		// if the node is closed, just return
 		if (isClosed(n)) {
 			return;
@@ -102,9 +118,11 @@ public class Solution {
 				val += bricks[i];
 			}
 			res[n.getP()] = val;
+			// how many did we take
+			n.setTake(bricks.length-n.getPos());
+			n.setChild(null);
 			// close the node
 			seen.put(n, res);
-			printEntry("end", n, res);
 			return;
 		}
 		
@@ -113,14 +131,10 @@ public class Solution {
 		boolean canClose = true;
 		Node[] children = new Node[3];
 		for (int i = 0; i < 3; i++) {
-			Node child = new Node(otherP(n.getP()), n.getPos() + i + 1);
+			Node child = Node.node(otherP(n.getP()), n.getPos() + i + 1);
 			children[i] = child;
 			// if the child is not closed
 			if (!isClosed(child)) {
-				// if we haven't seen it, add it to the seen table
-				if (!seen.containsKey(child)) {
-					seen.put(child, null);
-				}
 				canClose = false;
 			}
 		}
@@ -135,23 +149,37 @@ public class Solution {
 				if (ret < val + val2[n.getP()]) {
 					res = val2;
 					ret = val + val2[n.getP()];
+					// note the move and the number
+					n.setChild(children[i]);
+					n.setTake(i + 1);
 				}
 			}
 			res = res.clone();
 			res[n.getP()] = ret;
 			seen.put(n, res);
-			printEntry("max", n, res);
 		}
-		// otherwise, we re-queue n and the children.  Add at the start of the queue, so this behaves as a stack
-		queue.addFirst(n);
-		for (Node c : children) {
-			queue.addFirst(c);
+		else {
+			// otherwise, we re-queue n and the children.  Add at the start of the queue, so this behaves as a stack
+			queue.addFirst(n);
+			for (Node c : children) {
+				// if we've seen the child, it's already in the queue.  Otherwise, mark it seen and insert
+				if (!seen.containsKey(c)) {
+					seen.put(c, null);
+					queue.addFirst(c);
+				}
+			}
 		}
 	}
 
+	void printMoves(Node n) {
+		while (n != null) {
+			System.out.println(String.format("Player %s take %s", n.getP(), n.getTake()));
+			n = n.getChild();
+		}
+	}
 	
 	public long play() {
-		Node root = new Node(0, 0);
+		Node root = Node.node(0, 0);
 		seen.put(root, null);
 		queue = new LinkedList<>();
 		queue.add(root);
@@ -161,8 +189,9 @@ public class Solution {
 			process(queue.poll());
 		}
 		
-		long [] score = seen.get(root);
-		System.out.println(String.format("%s %s", score[0], score[1]));
+		// printMoves(root);
+		
+		long [] score = seen.get(root);		
 		return score[0];
 	}
 	
