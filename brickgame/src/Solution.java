@@ -6,6 +6,8 @@ public class Solution {
 	
 	long[] score; // player 0, player 1
 	
+	long total;
+	
 	int[] bricks;
 	
 	class Node {
@@ -87,15 +89,18 @@ public class Solution {
 	
 	public long play() {
 		long [] ret = play(0, 0);
+		System.out.println(String.format("t=%s, a=%s, %s, atot=%s", total, ret[0], ret[1], ret[0]+ret[1]));
 		return Math.max(ret[0], ret[1]);
 	}
 	
 	public void init(Scanner in) {
 		seen = new HashMap<>();
+		total = 0;
 		int n = in.nextInt();
 		bricks = new int[n];
 		for (int i = 0; i < n; i++) {
 			bricks[i] = in.nextInt();
+			total += bricks[i];
 		}
 	}
 
