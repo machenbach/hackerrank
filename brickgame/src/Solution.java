@@ -1,4 +1,5 @@
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -15,6 +16,19 @@ public class Solution {
 		public Node(int p, int pos) {
 			this.p = p;
 			this.pos = pos;
+		}
+		
+		public int getP() {
+			return p;
+		}
+
+		public int getPos() {
+			return pos;
+		}
+		
+		@Override
+		public String toString() {
+			return String.format("(%s, %s)", p, pos);
 		}
 
 		@Override
@@ -52,42 +66,104 @@ public class Solution {
 	
 	Map<Node, long[]> seen;
 	
+	LinkedList<Node> queue;
 	
-	long[] play(int p, int pos) {
-		Node n = new Node(p, pos);
-		if (seen.containsKey(n)) {
-			return seen.get(n);
-		}
-		
-		// if the queue has three or few elements in it, best move is take them all
-		long[] res = new long[2];
-		if (bricks.length - pos <= 3) {
-			long val = 0;
-			for (int i = pos; i < bricks.length; i++) {
-				val += bricks[i];
-			}
-			res[p] = val;
-			seen.put(n, res);
-			return res;
-		}
-		long ret = Long.MIN_VALUE;
-		int val = 0;
-		for (int i = pos; i < pos + 3; i++) {
-			val += bricks[i];
-			long[] val2 = play(p == 0 ? 1 : 0, i+1);
-			if (ret < val + val2[p]) {
-				res = val2;
-				ret = val + val2[p];
-			}
-		}
-		res[p] = ret;
-		seen.put(n, res.clone());
-		return res;
+	// get the next player
+	int otherP(int p) {
+		return p == 0 ? 1 : 0;
 	}
 	
+	boolean isClosed(Node n) {
+		return seen.get(n) != null;
+	}
+	
+	// A node can be unseen, seen, or closed.
+	// an unseen node does not exist in the seen map
+	// a seen node exists in the seen map, but has no value (value is null)
+	// a closed node exists in the seen map, with an array value
+	
+	void printEntry (String pre, Node n, long[] a) {
+		System.out.println(String.format("%s -- %s: %s, %s", pre, n, a[0], a[1]));
+	}
+	
+	// process the node.
+	void process(Node n) {
+		System.out.println("Process: " + n);
+		// if the node is closed, just return
+		if (isClosed(n)) {
+			return;
+		}
+		
+		// if the node points to one of the last three elements, we can sum it up, and close it.
+		long[] res = new long[2];
+		if (bricks.length - n.getPos() <= 3) {
+			long val = 0;
+			for (int i = n.getPos(); i < bricks.length; i++) {
+				val += bricks[i];
+			}
+			res[n.getP()] = val;
+			// close the node
+			seen.put(n, res);
+			printEntry("end", n, res);
+			return;
+		}
+		
+		// otherwise, we need to find child nodes based on taking one, two or three bricks.
+		// we can close n if all the children are closed
+		boolean canClose = true;
+		Node[] children = new Node[3];
+		for (int i = 0; i < 3; i++) {
+			Node child = new Node(otherP(n.getP()), n.getPos() + i + 1);
+			children[i] = child;
+			// if the child is not closed
+			if (!isClosed(child)) {
+				// if we haven't seen it, add it to the seen table
+				if (!seen.containsKey(child)) {
+					seen.put(child, null);
+				}
+				canClose = false;
+			}
+		}
+		
+		// if we can close the node, find our best move, and close it
+		if (canClose) {
+			long ret = Long.MIN_VALUE;
+			int val = 0;
+			for (int i = 0; i < 3; i++) {
+				val += bricks[i + n.getPos()];
+				long[] val2 = seen.get(children[i]);
+				if (ret < val + val2[n.getP()]) {
+					res = val2;
+					ret = val + val2[n.getP()];
+				}
+			}
+			res = res.clone();
+			res[n.getP()] = ret;
+			seen.put(n, res);
+			printEntry("max", n, res);
+		}
+		// otherwise, we re-queue n and the children.  Add at the start of the queue, so this behaves as a stack
+		queue.addFirst(n);
+		for (Node c : children) {
+			queue.addFirst(c);
+		}
+	}
+
+	
 	public long play() {
-		long [] ret = play(0, 0);
-		return Math.max(ret[0], ret[1]);
+		Node root = new Node(0, 0);
+		seen.put(root, null);
+		queue = new LinkedList<>();
+		queue.add(root);
+		
+		// process the queue
+		while (!queue.isEmpty()) {
+			process(queue.poll());
+		}
+		
+		long [] score = seen.get(root);
+		System.out.println(String.format("%s %s", score[0], score[1]));
+		return score[0];
 	}
 	
 	public void init(Scanner in) {
