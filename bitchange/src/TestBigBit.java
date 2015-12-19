@@ -12,12 +12,17 @@ public class TestBigBit {
 	class BigBit {
 		int bitSize;
 		int byteCnt;
-		byte[] bits;
+		int[] bits;
 		
 		public BigBit(int bitSize, BigInteger val) {
 			this.bitSize = bitSize;
-			byteCnt = (bitSize >> 3) + 1;
-			bits = Arrays.copyOf(val.toByteArray(), byteCnt);
+			byteCnt = ((bitSize-1) >> 3) + 1;
+			bits = new int[byteCnt];
+			BigInteger mask = BigInteger.valueOf(255);
+			for (int i = 0; i < byteCnt; i++) {
+				bits[i] = (val.and(mask)).intValue();
+				val = val.shiftRight(8);
+			}
 		}
 		
 		public BigBit(BigBit b) {
@@ -44,7 +49,7 @@ public class TestBigBit {
 			for (int i = byteCnt - 1; i >= 0; i--) {
 				if (firstZero || bits[i] != 0) {
 					firstZero = true;
-					sb.append(Integer.toHexString(Byte.toUnsignedInt(bits[i])));
+					sb.append(Integer.toHexString(bits[i]));
 				}
 			}
 			if (sb.length() == 0) {
@@ -90,12 +95,47 @@ public class TestBigBit {
 		
 	}
 	
+	@Test 
+	public void test1024() {
+		BigInteger a = BigInteger.valueOf(1024);
+		BigBit b = new BigBit(32, a);
+		System.out.println(String.format("%s != %s", a.toString(16), b.toString()));
+		
+	}
+	@Test
+	public void testStr() {
+		for (int i = 0; i < 10000; i++) {
+			BigInteger a = BigInteger.valueOf(i);
+			BigBit b = new BigBit(32, a);
+			System.out.println(String.format("%s != %s", a.toString(16), b.toString()));
+			Assert.assertTrue(String.format("%s != %s", a.toString(16), b.toString()), a.toString(16).equals(b.toString()));
+		}
+	}
+	
 	@Test
 	public void testTestBit() {
 		for (int i = 0; i < 100000; i++) {
 			int idx = r.nextInt(n);
 			Assert.assertTrue("Failed a " + i, a.testBit(idx) == (abb.testBit(idx) == 1));
 			Assert.assertTrue("Failed b " + i, b.testBit(idx) == (bbb.testBit(idx) == 1));
+		}
+	}
+	
+	@Test 
+	public void TestClrBit() {
+		for (int i = 0; i < 100000; i++) {
+			int idx = r.nextInt(n);
+			abb.setBit(idx, 0);
+			Assert.assertTrue("Failed a " + i, (abb.testBit(idx) == 0));
+		}
+	}
+
+	@Test 
+	public void TestSetBit() {
+		for (int i = 0; i < 100000; i++) {
+			int idx = r.nextInt(n);
+			abb.setBit(idx, 1);
+			Assert.assertTrue("Failed a " + i, (abb.testBit(idx) == 1));
 		}
 	}
 
