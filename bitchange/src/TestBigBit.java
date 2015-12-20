@@ -1,5 +1,4 @@
 import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.Random;
 
 import org.junit.Assert;
@@ -9,71 +8,6 @@ import org.junit.Test;
 
 
 public class TestBigBit {
-	class BigBit {
-		int bitSize;
-		int byteCnt;
-		int[] bits;
-		
-		public BigBit(int bitSize, BigInteger val) {
-			this.bitSize = bitSize;
-			byteCnt = ((bitSize-1) >> 3) + 1;
-			bits = new int[byteCnt];
-			BigInteger mask = BigInteger.valueOf(255);
-			for (int i = 0; i < byteCnt; i++) {
-				bits[i] = (val.and(mask)).intValue();
-				val = val.shiftRight(8);
-			}
-		}
-		
-		public BigBit(BigBit b) {
-			bitSize = b.bitSize;
-			byteCnt = b.byteCnt;
-			bits = b.bits.clone();
-		}
-		
-		public void setBit(int idx, int bit) {
-			int bdx = idx >> 3;
-			int mask = 0x1 << (idx % 8);
-			if (bit == 0) {
-				mask = -1 ^ mask;
-				bits[bdx] = (byte) (bits[bdx] & mask);
-			}
-			else {
-				bits[bdx] = (byte) (bits[bdx] | mask);
-			}
-		}
-		
-		public String toString() {
-			StringBuffer sb = new StringBuffer();
-			boolean firstZero = false;
-			for (int i = byteCnt - 1; i >= 0; i--) {
-				if (firstZero || bits[i] != 0) {
-					firstZero = true;
-					sb.append(Integer.toHexString(bits[i]));
-				}
-			}
-			if (sb.length() == 0) {
-				sb.append("0");
-			}
-			return sb.toString();
-		}
-		
-		public int testBit(int idx) {
-			int bdx = idx >> 3;
-			int mask = 1 << (idx % 8);
-			return (bits[bdx] & mask) == 0 ? 0 : 1;
-		}
-		
-		public void addTo (BigBit o) {
-			int lastCarry = 0;
-			int nextCarry = 0;
-			for (int i = 0; i < byteCnt; i++) {
-				nextCarry = (bits[i] & o.bits[i]) >> 7;
-				bits[i] += (o.bits[i] + lastCarry);
-				lastCarry = nextCarry;
-			}
-		}
-	}
 	
 	int n;
 	BigInteger a;
@@ -95,32 +29,39 @@ public class TestBigBit {
 		
 	}
 	
-	@Test 
-	public void test1024() {
-		BigInteger a = BigInteger.valueOf(1024);
-		BigBit b = new BigBit(32, a);
-		System.out.println(String.format("%s != %s", a.toString(16), b.toString()));
-		
-	}
 	@Test
 	public void testStr() {
 		for (int i = 0; i < 10000; i++) {
 			BigInteger a = BigInteger.valueOf(i);
 			BigBit b = new BigBit(32, a);
-			System.out.println(String.format("%s != %s", a.toString(16), b.toString()));
 			Assert.assertTrue(String.format("%s != %s", a.toString(16), b.toString()), a.toString(16).equals(b.toString()));
 		}
 	}
 	
 	@Test
+	public void testStr2() {
+		for (long i = Integer.MAX_VALUE; i < Integer.MAX_VALUE + 10000; i++) {
+			BigInteger a = BigInteger.valueOf(i);
+			BigBit b = new BigBit(32, a);
+			Assert.assertTrue(String.format("%s != %s", a.toString(16), b.toString()), a.toString(16).equals(b.toString()));
+		}
+	}
+	@Test
+	public void testBigStr() {
+		Assert.assertTrue(String.format("%s != %s", a.toString(16), abb.toString()), a.toString(16).equals(abb.toString()));
+		Assert.assertTrue(String.format("%s != %s", b.toString(16), bbb.toString()), b.toString(16).equals(bbb.toString()));
+	}
+	
+	@Test
 	public void testTestBit() {
 		for (int i = 0; i < 100000; i++) {
-			int idx = r.nextInt(n);
-			Assert.assertTrue("Failed a " + i, a.testBit(idx) == (abb.testBit(idx) == 1));
-			Assert.assertTrue("Failed b " + i, b.testBit(idx) == (bbb.testBit(idx) == 1));
+			int idx = r.nextInt(n - 1);
+			Assert.assertTrue(String.format("failed n = %d %d, %x", n, idx, idx), a.testBit(idx) == (abb.testBit(idx) == 1));
+			Assert.assertTrue(String.format("failed n = %d %d, %x", n, idx, idx), b.testBit(idx) == (bbb.testBit(idx) == 1));
 		}
 	}
 	
+
 	@Test 
 	public void TestClrBit() {
 		for (int i = 0; i < 100000; i++) {
@@ -137,6 +78,50 @@ public class TestBigBit {
 			abb.setBit(idx, 1);
 			Assert.assertTrue("Failed a " + i, (abb.testBit(idx) == 1));
 		}
+	}
+	
+	@Test
+	public void testSum() {
+		for (int i = 0; i < 1000; i++) {
+			for (int j = i; j < 1000; j++) {
+				BigInteger a = BigInteger.valueOf(i);
+				BigInteger b = BigInteger.valueOf(j);
+				BigInteger c = a.add(b);
+				
+				BigBit ab = new BigBit(32, a);
+				BigBit bb = new BigBit(32, b);
+				ab.addIn(bb);
+				Assert.assertTrue(String.format("(%s, %s) %s != %s", i, j, c.toString(16), ab.toString()), 
+						c.toString(16).equals(ab.toString()));
+				
+			}
+		}
+	}
+	
+	@Test
+	public void testSum2() {
+		for (int i = 0; i < 1000; i++) {
+			for (int j = i; j < 1000; j++) {
+				BigInteger a = BigInteger.valueOf(i);
+				BigInteger b = BigInteger.valueOf(j);
+				BigInteger c = a.add(b);
+				
+				BigBit ab = new BigBit(32, a);
+				BigBit bb = new BigBit(32, b);
+				
+				BigBit cb = new BigBit(ab, bb);
+				Assert.assertTrue(String.format("(%s, %s) %s != %s", i, j, c.toString(16), cb.toString()), 
+						c.toString(16).equals(cb.toString()));
+				
+			}
+		}
+	}
+	@Test
+	public void bigSum() {
+		BigInteger c = a.add(b);
+		abb.addIn(bbb);
+		Assert.assertTrue(String.format("%s != %s", c.toString(16), abb.toString()), 
+				c.toString(16).equals(abb.toString()));
 	}
 
 }
