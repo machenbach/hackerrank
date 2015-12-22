@@ -20,6 +20,10 @@ public class BigBit {
 			}
 		}
 		
+		public BigBit(int bitSize, String str) {
+			this(bitSize, new BigInteger(str, 16));
+		}
+		
 		public BigBit(BigBit b) {
 			bitSize = b.bitSize;
 			byteCnt = b.byteCnt;
@@ -64,18 +68,20 @@ public class BigBit {
 		public void updateSum (int idx) {
 			int bdx = idx >> 5;
 			long carry = 0;
-			int places = 0;
+			if (bdx > 0) {
+				carry = (s1.bits[bdx - 1] + s2.bits[bdx - 1]) >> 32;
+			}
 			for (int i = bdx; i < byteCnt; i++) {
 				long k = s1.bits[i] + s2.bits[i] + carry;
-				bits[i] = (k & 0xffffffffl);
 				carry = k >> 32;
-				if (carry == 0 && places > 3) {
+				k &= 0xffffffffl;
+				if (k == bits[i]) {
 					break;
 				}
-				places++;
+				bits[i] = k;
 			}
 		}
-
+		
 		public String toString() {
 			StringBuffer sb = new StringBuffer();
 			for (int i = byteCnt - 1; i >= 0; i--) {
