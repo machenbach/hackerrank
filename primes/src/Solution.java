@@ -1,5 +1,6 @@
+import static java.lang.System.in;
+
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Method;
@@ -51,8 +52,8 @@ class Sieve implements Iterable<Integer>, Iterator<Integer>{
 	}
 }
 
-
 class Prime {
+	InputStream in = System.in;
 	
 	boolean isPrime(int n) {
 		if (n <= 1) return false;
