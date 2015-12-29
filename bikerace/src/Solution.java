@@ -72,7 +72,7 @@ public class Solution {
 	// search for the closest rider/bike pair in this section
 	Pair closestPair (int rmin, int rmax, int bmin, int bmax) {
 		// if few enough r and b, brute force search
-		if (rmax - rmin < Integer.MAX_VALUE || bmax - bmin < Integer.MAX_VALUE) {
+		if (rmax - rmin < 3|| bmax - bmin < 3) {
 			return bruteForce(rmin, rmax, bmin, bmax);
 		}
 		
