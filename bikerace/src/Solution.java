@@ -1,180 +1,160 @@
-import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Scanner;
+import java.util.Set;
 
 public class Solution {
-	class Point implements Comparable<Point>{
+	class Coord {
 		public int x;
 		public int y;
 		
-		public Point(int x, int y) {
+		public Coord(int x, int y) {
 			this.x = x;
 			this.y = y;
 		}
 		
-		public Point (int x) {
-			this.x = x;
-			this.y = 0;
+		public long dist2(Coord o) {
+			long dx = x - o.x;
+			long dy = y - o.y;
+			return dx * dx + dy * dy;
 		}
 		
-		public long dist2(Point o) {
-			long xd = x - o.x;
-			long yd = y - o.y;
-			return xd * xd + yd * yd;
-		}
-
-		@Override
-		public int compareTo(Point o) {
-			return Long.compare(x, o.x);
-		}
-
 		@Override
 		public String toString() {
 			return String.format("(%s, %s)", x, y);
 		}
+	}
+	
+	class Pair {
+		public int r;
+		public int b;
 		
+		public Pair (int r, int b) {
+			this.r = r;
+			this.b = b;
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + getOuterType().hashCode();
+			result = prime * result + b;
+			result = prime * result + r;
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			Pair other = (Pair) obj;
+			if (!getOuterType().equals(other.getOuterType()))
+				return false;
+			if (b != other.b)
+				return false;
+			if (r != other.r)
+				return false;
+			return true;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("<%s, %s>", r, b);
+		}
+
+		private Solution getOuterType() {
+			return Solution.this;
+		}
+	}
+	
+	class DPair implements Comparable<DPair>{
+		Pair p;
+		long d;
+		
+		public DPair( int r, int b, long d) {
+			p = new Pair(r, b);
+			this.d = d;
+		}
+
+		@Override
+		public int compareTo(DPair o) {
+			return Long.compare(d, o.d);
+		}
+		
+		@Override
+		public String toString() {
+			return String.format("%s: %s", p, d);
+		}
+
 		
 	}
+	
 	
 	int rn;
 	int bn;
 	int k;
 	
-	Point[] riders;
-	Point[] bikes;
+	Coord[] riders;
+	Coord[] bikes;
+	PriorityQueue<DPair> queue;
+	Map<Integer, Set<Integer>> dr;	// distinct riders
+	Map<Integer, Set<Integer>> db;	// 
 	
-	class Pair {
-		public long d = Long.MAX_VALUE;
-		public int r = -1;
-		public int b = -1;
-		@Override
-		public String toString() {
-			return String.format("<%s, %s: %s>", r, b, d);
-		}
-		
-	}
-	
-	private Pair bruteForce(int rmin, int rmax, int bmin, int bmax) {
-		Pair pmin = new Pair();
-		for (int r = rmin; r < rmax; r++) {
-			for (int b = bmin; b < bmax; b++) {
-				long d = riders[r].dist2(bikes[b]);
-				if (d < pmin.d) {
-					pmin.d = d;
-					pmin.r = r;
-					pmin.b = b;
-				}
-			}
-		}
-		return pmin;
-	}
-
-
-	// search for the closest rider/bike pair in this section
-	Pair closestPair (int rmin, int rmax, int bmin, int bmax) {
-		// if few enough r and b, brute force search
-		if (rmax - rmin < 3|| bmax - bmin < 3) {
-			return bruteForce(rmin, rmax, bmin, bmax);
-		}
-		
-		// else divide in half
-		// split the riders in half
-		int rmid = ((rmin + rmax)/2) + 1;
-		// find the point to split the bikes
-		int bmid = Arrays.binarySearch(bikes, new Point(riders[rmid].x));
-		if (bmid < 0) {
-			bmid = -(bmid + 1);
-		}
-		// get left and right closes, and work with the minimum distance
-		Pair lPair = closestPair(rmin, rmid, bmin, bmid);
-		Pair rPair = closestPair(rmid, rmax, bmid, bmax);
-		
-		Pair pair = lPair.d < rPair.d ? lPair : rPair;
-		
-		// for this we need the real distance, not the square
-		long dist = (long)Math.ceil(Math.sqrt(pair.d));
-		long minDist = riders[rmid].x - dist;
-		long maxDist = riders[rmid].x + dist;
-		
-		// now find the minimum rider-bike pair in the distance in the middle
-		int trMin = rmin;
-		int trMax = rmax;
-		int tbMin = bmin;
-		int tbMax = bmax;
-		
-		for (int i = rmid - 1; i >= rmin; i--) {
-			if (riders[i].x >= minDist) {
-				trMin = i;
-			}
-		}
-
-		for (int i = rmid; i < rmax; i++) {
-			if (riders[i].x <= maxDist) {
-				trMax = i + 1;
-			}
-		}
-
-		for (int i = bmid - 1; i >= bmin; i--) {
-			if (bikes[i].x >= minDist) {
-				tbMin = i;
-			}
-		}
-
-		for (int i = bmid; i < bmax; i++) {
-			if (bikes[i].x <= maxDist) {
-				tbMax = i + 1;
-			}
-		}
-		
-		Pair mPair = bruteForce(trMin, trMax, tbMin, tbMax);
-		return mPair.d < pair.d ? mPair : pair;
-		
-	}
-	
-	Pair closestPair() {
-		return closestPair(0, rn, 0, bn);
-	}
-	
-	// remove the rider/bike pair, and adjust the arrays.
-	void removePair (Pair p) {
-		for (int i = p.b; i < bn-1; i++) {
-			bikes[i] = bikes[i+1];
-		}
-		for (int i = p.r; i < rn-1; i++) {
-			riders[i] = riders[i+1];
-		}
-		bn--;
-		rn--;
-		
-	}
-	
-	public long solve() {
-		// sort the arrays
-		Arrays.sort(riders);
-		Arrays.sort(bikes);
-		
-		long max = 0;
-		for (int i = 0; i < k; i++) {
-			Pair p = closestPair();
-			max = Math.max(max,p.d);
-			removePair(p);
-		}
-		return max;
-	}
 	
 	public void init (Scanner in) {
 		rn = in.nextInt();
 		bn = in.nextInt();
 		k = in.nextInt();
 		
-		riders = new Point[rn];
+		queue = new PriorityQueue<>();
+		
+		riders = new Coord[rn];
+		dr = new HashMap<>();
 		for (int i=0; i < rn; i++) {
-			riders[i] = new Point(in.nextInt(), in.nextInt());
+			riders[i] = new Coord(in.nextInt(), in.nextInt());
 		}
 		
-		bikes = new Point[bn];
+		bikes = new Coord[bn];
+		db = new HashMap<>();
 		for (int i = 0; i < bn; i++) {
-			bikes[i] = new Point(in.nextInt(), in.nextInt());
+			bikes[i] = new Coord(in.nextInt(), in.nextInt());
 		}
+		
+		for (int r = 0; r < rn; r++) {
+			for (int b = 0; b < bn; b++) {
+				queue.add(new DPair(r, b, riders[r].dist2(bikes[b])));
+			}
+		}
+	}
+	
+	public long solve() {
+		Set<Pair> p = new HashSet<>();
+		long maxD = Long.MIN_VALUE;
+		while (dr.size() < k || db.size() < k  ||
+				new HashSet<Set<Integer>>(dr.values()).size() < k ||
+				new HashSet<Set<Integer>>(db.values()).size() < k) {
+			DPair d = queue.poll();
+			if (d == null) break;
+			maxD = Math.max(maxD, d.d);
+			if (!db.containsKey(d.p.b)) {
+				db.put(d.p.b, new HashSet<>());
+			}
+			if (!dr.containsKey(d.p.r)) {
+				dr.put(d.p.r, new HashSet<>());
+			}
+			db.get(d.p.b).add(d.p.r);
+			dr.get(d.p.r).add(d.p.b);
+			p.add(d.p);
+			
+		}
+		return maxD;
 	}
 
 	public static void main(String[] args) {
