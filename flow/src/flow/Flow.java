@@ -124,29 +124,45 @@ public class Flow {
 	}
 	
 	// find a new flow through the residual graph
-	int findFlow(List<Integer> path) {
-		int flow = Integer.MAX_VALUE;
+	boolean findPath(List<Integer> path) {
 		Queue<Integer> q = new ArrayDeque<>();
 		Set<Integer> seen = new HashSet<>();
+		Map<Integer, Integer> prev = new HashMap<>();
 		// initialize with the starting vertex.
 		q.add(s);
 		seen.add(s);
-		path.add(s);
 		while (!q.isEmpty()) {
 			int n = q.poll();
 			if (n == t) {
-				return flow;
+				int p = t;
+				while (p != s) {
+					path.add(0, p);
+					p = prev.get(p);
+				}
+				path.add(0,s);
+				return true;
 			}
 			for (int c : gn.getOrDefault(n, new ArrayList<Integer>())) {
 				if (!seen.contains(c)) {
 					seen.add(c);
+					prev.put(c, n);
 					q.add(c);
 				}
-				flow = Math.min(flow, cn.getOrDefault(new Pair<>(n, c), 0));
-				path.add(c);
 			}
 		}
-		return 0;
+		return false;
+	}
+	
+	int getFlow(List<Integer> path) {
+		int flow = Integer.MAX_VALUE;
+		int u = -1;
+		for (int v : path) {
+			if (u != -1) {
+				flow = Math.min(flow, cn.get(new Pair<>(u, v)));
+			}
+			u = v;
+		}
+		return flow;
 	}
 	
 	void addAugmenting(int flow, List<Integer> path) {
@@ -156,7 +172,7 @@ public class Flow {
 				Pair<Integer> p = new Pair<>(u, v);
 				Pair<Integer> antip = new Pair<>(v, u);
 				f.put(p, f.getOrDefault(p, 0) + flow);
-				f.put(antip, f.getOrDefault(p, 0) - flow);
+				f.put(antip, -f.get(p));
 			}
 			u = v;
 		}
@@ -168,10 +184,10 @@ public class Flow {
 		while(true) {
 			List<Integer> path = new ArrayList<>();
 			createResidual();
-			int flow = findFlow(path);
-			if (flow == 0) {
+			if (!findPath(path)) {
 				return;
 			}
+			int flow = getFlow(path);
 			addAugmenting(flow, path);
 		}
 		
@@ -179,13 +195,14 @@ public class Flow {
 	
 	public void printGraph() {
 		Set<Integer> nodes = new TreeSet<>(V);
-		int u = -1;
-		for (int v : nodes) {
-			if (u != -1) {
+		for (int u : nodes) {
+			for (int v : nodes) {
 				Pair<Integer> p = new Pair<>(u, v);
-				System.out.println(String.format("%s: %s/%s", p, f.getOrDefault(p, 0), c.get(p)));
+				int cap = c.getOrDefault(p, 0);
+				if (cap > 0) {
+					System.out.println(String.format("%s: %s/%s", p, f.getOrDefault(p, 0), cap));
+				}
 			}
-			u = v;
 		}
 	}
 	
