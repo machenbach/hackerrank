@@ -9,98 +9,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
-import java.util.TreeSet;
 
 public class Flow {
-	class Pair<T> {
-		public T u;
-		public T v;
-		
-		public Pair(T u, T v) {
-			this.u = u;
-			this.v = v;
-		}
-
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + getOuterType().hashCode();
-			result = prime * result + ((u == null) ? 0 : u.hashCode());
-			result = prime * result + ((v == null) ? 0 : v.hashCode());
-			return result;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj) {
-				return true;
-			}
-			if (obj == null) {
-				return false;
-			}
-			if (getClass() != obj.getClass()) {
-				return false;
-			}
-			Pair<?> other = (Pair<?>) obj;
-			if (!getOuterType().equals(other.getOuterType())) {
-				return false;
-			}
-			if (u == null) {
-				if (other.u != null) {
-					return false;
-				}
-			} else if (!u.equals(other.u)) {
-				return false;
-			}
-			if (v == null) {
-				if (other.v != null) {
-					return false;
-				}
-			} else if (!v.equals(other.v)) {
-				return false;
-			}
-			return true;
-		}
-
-		private Flow getOuterType() {
-			return Flow.this;
-		}
-
-		@Override
-		public String toString() {
-			return String.format("(%s, %s)", u, v);
-		}
-
-		
-	}
-
 	Map<Pair<Integer>, Integer> f; // flow function
 	Map<Pair<Integer>, Integer> c; // capacity
 	Map<Pair<Integer>, Integer> cn; // induced capacity
 	Map<Integer, List<Integer>> gn; // induced graph
 	List<Integer> V;				// vertices in the graph (Edges are c)
 	
-	int s = 0;
-	int t = Integer.MAX_VALUE;
+	public static int s = 0;
+	public static int t = Integer.MAX_VALUE;
 	
-	public void init() {
-		Integer[] nodes = {s, 1, 2, 3, 4, t};
+	public void init(Integer[] nodes, Map<Pair<Integer>, Integer> cap) {
 		V = Arrays.asList(nodes);
+		c = new HashMap<>(cap);
 		f = new HashMap<>();
-		
-		c = new HashMap<>();
-		c.put(new Pair<>(s, 1), 16);
-		c.put(new Pair<>(s, 2), 13);
-		c.put(new Pair<>(1, 2), 10);
-		c.put(new Pair<>(2, 4), 14);
-		c.put(new Pair<>(1, 3), 12);
-		c.put(new Pair<>(2, 1), 4);
-		c.put(new Pair<>(3, 2), 9);
-		c.put(new Pair<>(2, 4), 14);
-		c.put(new Pair<>(4, 3), 7);
-		c.put(new Pair<>(3, t), 20);
-		c.put(new Pair<>(4, t), 4);
 	}
 	
 	// use the current flows to create a new residual graph
@@ -179,24 +102,24 @@ public class Flow {
 		
 	}
 	
-	public void solve() {
+	public Map<Pair<Integer>, Integer> solve() {
 		// loop until there are no more flows
 		while(true) {
 			List<Integer> path = new ArrayList<>();
 			createResidual();
 			if (!findPath(path)) {
-				return;
+				return f;
 			}
+			System.out.println(path);
 			int flow = getFlow(path);
 			addAugmenting(flow, path);
 		}
 		
 	}
 	
-	public void printGraph() {
-		Set<Integer> nodes = new TreeSet<>(V);
-		for (int u : nodes) {
-			for (int v : nodes) {
+	public static void printGraph(Integer[] V, Map<Pair<Integer>, Integer> f, Map<Pair<Integer>, Integer> c) {
+		for (int u : V) {
+			for (int v : V) {
 				Pair<Integer> p = new Pair<>(u, v);
 				int cap = c.getOrDefault(p, 0);
 				if (cap > 0) {
@@ -207,10 +130,25 @@ public class Flow {
 	}
 	
 	public static void main(String[] args) {
+		Integer[] nodes = {s, 1, 2, 3, 4, t};
+
+		Map<Pair<Integer>, Integer> c = new HashMap<>();
+		c.put(new Pair<>(s, 1), 16);
+		c.put(new Pair<>(s, 2), 13);
+		c.put(new Pair<>(1, 2), 10);
+		c.put(new Pair<>(2, 4), 14);
+		c.put(new Pair<>(1, 3), 12);
+		c.put(new Pair<>(2, 1), 4);
+		c.put(new Pair<>(3, 2), 9);
+		c.put(new Pair<>(2, 4), 14);
+		c.put(new Pair<>(4, 3), 7);
+		c.put(new Pair<>(3, t), 20);
+		c.put(new Pair<>(4, t), 4);
+		
 		Flow f = new Flow();
-		f.init();
-		f.solve();
-		f.printGraph();
+		f.init(nodes, c);
+		Map<Pair<Integer>, Integer> flows = f.solve();
+		printGraph(nodes, flows, c);
 
 	}
 
