@@ -1,109 +1,220 @@
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.PriorityQueue;
+import java.util.Queue;
 import java.util.Scanner;
 import java.util.Set;
 
-public class Solution {
-	class Coord {
-		public int x;
-		public int y;
-		
-		public Coord(int x, int y) {
-			this.x = x;
-			this.y = y;
-		}
-		
-		public long dist2(Coord o) {
-			long dx = x - o.x;
-			long dy = y - o.y;
-			return dx * dx + dy * dy;
-		}
-		
-		@Override
-		public String toString() {
-			return String.format("(%s, %s)", x, y);
-		}
-	}
+
+class Pair<T> {
+	public T u;
+	public T v;
 	
-	class Pair {
-		public int r;
-		public int b;
-		
-		public Pair (int r, int b) {
-			this.r = r;
-			this.b = b;
-		}
+	public Pair(T u, T v) {
+		this.u = u;
+		this.v = v;
+	}
 
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + getOuterType().hashCode();
-			result = prime * result + b;
-			result = prime * result + r;
-			return result;
-		}
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((u == null) ? 0 : u.hashCode());
+		result = prime * result + ((v == null) ? 0 : v.hashCode());
+		return result;
+	}
 
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			Pair other = (Pair) obj;
-			if (!getOuterType().equals(other.getOuterType()))
-				return false;
-			if (b != other.b)
-				return false;
-			if (r != other.r)
-				return false;
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
 			return true;
 		}
-
-		@Override
-		public String toString() {
-			return String.format("<%s, %s>", r, b);
+		if (obj == null) {
+			return false;
 		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		Pair<?> other = (Pair<?>) obj;
+		if (u == null) {
+			if (other.u != null) {
+				return false;
+			}
+		} else if (!u.equals(other.u)) {
+			return false;
+		}
+		if (v == null) {
+			if (other.v != null) {
+				return false;
+			}
+		} else if (!v.equals(other.v)) {
+			return false;
+		}
+		return true;
+	}
 
-		private Solution getOuterType() {
-			return Solution.this;
+	@Override
+	public String toString() {
+		return String.format("(%s, %s)", u, v);
+	}
+
+	
+}
+
+
+
+class Flow<T> {
+	Map<Pair<T>, Long> f; // flow function
+	Map<Pair<T>, Long> c; // capacity
+	Map<Pair<T>, Long> cn; // induced capacity
+	Map<T, List<T>> gn; // induced graph
+	List<T> V;				// vertices in the graph (Edges are c)
+	
+	public T s;
+	public T t;
+	
+	public Flow(T s, T t) {
+		this.s = s;
+		this.t= t;
+	}
+	
+	public void init(List<T> nodes, Map<Pair<T>, Long> cap) {
+		V = new ArrayList<>(nodes);
+		c = new HashMap<>(cap);
+		f = new HashMap<>();
+	}
+	
+	// use the current flows to create a new residual graph
+	void createResidual() {
+		cn = new HashMap<>();
+		gn = new HashMap<>();
+		
+		for (T u : V) {
+			for (T v : V) {
+				Pair<T> p = new Pair<T>(u, v);
+				long f1 = f.getOrDefault(p, 0l);
+				long c1 = c.getOrDefault(p, 0l);
+				long r = c1 - f1;
+				if (r > 0) {
+					cn.put(p, r);
+					gn.putIfAbsent(u, new ArrayList<>());
+					gn.get(u).add(v);
+				}
+			}
 		}
 	}
 	
-	class DPair implements Comparable<DPair>{
-		Pair p;
-		long d;
-		
-		public DPair( int r, int b, long d) {
-			p = new Pair(r, b);
-			this.d = d;
+	// find a new flow through the residual graph
+	boolean findPath(List<T> path) {
+		Queue<T> q = new ArrayDeque<>();
+		Set<T> seen = new HashSet<>();
+		Map<T, T> prev = new HashMap<>();
+		// initialize with the starting vertex.
+		q.add(s);
+		seen.add(s);
+		while (!q.isEmpty()) {
+			T n = q.poll();
+			if (n.equals(t)) {
+				T p = t;
+				while (!p.equals(s)) {
+					path.add(0, p);
+					p = prev.get(p);
+				}
+				path.add(0,s);
+				return true;
+			}
+			for (T c : gn.getOrDefault(n, new ArrayList<T>())) {
+				if (!seen.contains(c)) {
+					seen.add(c);
+					prev.put(c, n);
+					q.add(c);
+				}
+			}
 		}
-
-		@Override
-		public int compareTo(DPair o) {
-			return Long.compare(d, o.d);
+		return false;
+	}
+	
+	long getFlow(List<T> path) {
+		long flow = Long.MAX_VALUE;
+		T u = null;
+		for (T v : path) {
+			if (u != null) {
+				flow = Math.min(flow, cn.get(new Pair<>(u, v)));
+			}
+			u = v;
 		}
-		
-		@Override
-		public String toString() {
-			return String.format("%s: %s", p, d);
+		return flow;
+	}
+	
+	void addAugmenting(long flow, List<T> path) {
+		T u = null;
+		for (T v : path) {
+			if (u != null) {
+				Pair<T> p = new Pair<>(u, v);
+				Pair<T> antip = new Pair<>(v, u);
+				f.put(p, f.getOrDefault(p, 0l) + flow);
+				f.put(antip, -f.get(p));
+			}
+			u = v;
 		}
-
 		
 	}
+	
+	public Map<Pair<T>, Long> solve() {
+		// loop until there are no more flows
+		while(true) {
+			List<T> path = new ArrayList<>();
+			createResidual();
+			if (!findPath(path)) {
+				return f;
+			}
+			long flow = getFlow(path);
+			addAugmenting(flow, path);
+		}
+		
+	}
+}
+
+
+class Coord {
+	public int x;
+	public int y;
+	
+	public Coord(int x, int y) {
+		this.x = x;
+		this.y = y;
+	}
+	
+	public long dist2(Coord o) {
+		long dx = x - o.x;
+		long dy = y - o.y;
+		return dx * dx + dy * dy;
+	}
+	
+	@Override
+	public String toString() {
+		return String.format("(%s, %s)", x, y);
+	}
+}
+
+
+public class Solution {
 	
 	
 	int rn;
 	int bn;
 	int k;
 	
-	Coord[] riders;
-	Coord[] bikes;
-	PriorityQueue<DPair> queue;
+	String s = "S";
+	String t = "T";
+	
+	Map<String, Coord> riders;
+	Map<String, Coord> bikes;
+	
+	
 	Map<Integer, Set<Integer>> dr;	// distinct riders
 	Map<Integer, Set<Integer>> db;	// 
 	
@@ -113,48 +224,73 @@ public class Solution {
 		bn = in.nextInt();
 		k = in.nextInt();
 		
-		queue = new PriorityQueue<>();
-		
-		riders = new Coord[rn];
+		riders = new HashMap<>();
 		dr = new HashMap<>();
 		for (int i=0; i < rn; i++) {
-			riders[i] = new Coord(in.nextInt(), in.nextInt());
+			riders.put("R" + i, new Coord(in.nextInt(), in.nextInt()));
 		}
 		
-		bikes = new Coord[bn];
+		bikes = new HashMap<>();
 		db = new HashMap<>();
 		for (int i = 0; i < bn; i++) {
-			bikes[i] = new Coord(in.nextInt(), in.nextInt());
+			bikes.put("B" + i, new Coord(in.nextInt(), in.nextInt()));
 		}
 		
-		for (int r = 0; r < rn; r++) {
-			for (int b = 0; b < bn; b++) {
-				queue.add(new DPair(r, b, riders[r].dist2(bikes[b])));
+	}
+	
+	List<String> nodes() {
+		List<String> n = new ArrayList<>();
+		n.add(s);
+		n.addAll(riders.keySet());
+		n.addAll(bikes.keySet());
+		n.add(t);
+		return n;
+	}
+	
+	long maxOuter = Long.MIN_VALUE;
+	
+	Map<Pair<String>, Long> capacity() {
+		Map<Pair<String>, Long> c = new HashMap<>();
+		// all the cross pairs
+		for (String r : riders.keySet()) {
+			for (String b : bikes.keySet()) {
+				Pair<String> p = new Pair<>(r, b);
+				long d = riders.get(r).dist2(bikes.get(b));
+				maxOuter = Math.max(maxOuter, d);
+				c.put(p, d);
 			}
 		}
+		
+		maxOuter++;
+		// now use one of the fancy new mapping functions
+		c.replaceAll((k, v) -> maxOuter-v);
+		// add the source
+		for (String r : riders.keySet()) {
+			c.put(new Pair<>(s, r), Long.MAX_VALUE);
+		}
+		
+		// and the sink
+		for (String b : bikes.keySet()) {
+			c.put(new Pair<>(b, t), Long.MAX_VALUE);
+		}
+		return c;
+	}
+	
+	long maxFlow(Map<Pair<String>, Long> flows) {
+		long f = Long.MIN_VALUE;
+		for (String r : riders.keySet()) {
+			for (String b : bikes.keySet()) {
+				f = Math.max(f, flows.getOrDefault(new Pair<>(r, b), 0l));
+			}
+		}
+		return maxOuter - f;
 	}
 	
 	public long solve() {
-		Set<Pair> p = new HashSet<>();
-		long maxD = Long.MIN_VALUE;
-		while (dr.size() < k || db.size() < k  ||
-				new HashSet<Set<Integer>>(dr.values()).size() < k ||
-				new HashSet<Set<Integer>>(db.values()).size() < k) {
-			DPair d = queue.poll();
-			if (d == null) break;
-			maxD = Math.max(maxD, d.d);
-			if (!db.containsKey(d.p.b)) {
-				db.put(d.p.b, new HashSet<>());
-			}
-			if (!dr.containsKey(d.p.r)) {
-				dr.put(d.p.r, new HashSet<>());
-			}
-			db.get(d.p.b).add(d.p.r);
-			dr.get(d.p.r).add(d.p.b);
-			p.add(d.p);
-			
-		}
-		return maxD;
+		Flow<String> f = new Flow<>(s, t);
+		f.init(nodes(), capacity());
+		Map<Pair<String>, Long> flows = f.solve();
+		return maxFlow(flows);
 	}
 
 	public static void main(String[] args) {
