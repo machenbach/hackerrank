@@ -10,17 +10,22 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
-public class Flow {
-	Map<Pair<Integer>, Integer> f; // flow function
-	Map<Pair<Integer>, Integer> c; // capacity
-	Map<Pair<Integer>, Integer> cn; // induced capacity
-	Map<Integer, List<Integer>> gn; // induced graph
-	List<Integer> V;				// vertices in the graph (Edges are c)
+public class Flow<T> {
+	Map<Pair<T>, Integer> f; // flow function
+	Map<Pair<T>, Integer> c; // capacity
+	Map<Pair<T>, Integer> cn; // induced capacity
+	Map<T, List<T>> gn; // induced graph
+	List<T> V;				// vertices in the graph (Edges are c)
 	
-	public static int s = 0;
-	public static int t = Integer.MAX_VALUE;
+	public T s;
+	public T t;
 	
-	public void init(Integer[] nodes, Map<Pair<Integer>, Integer> cap) {
+	public Flow(T s, T t) {
+		this.s = s;
+		this.t= t;
+	}
+	
+	public void init(T[] nodes, Map<Pair<T>, Integer> cap) {
 		V = Arrays.asList(nodes);
 		c = new HashMap<>(cap);
 		f = new HashMap<>();
@@ -31,9 +36,9 @@ public class Flow {
 		cn = new HashMap<>();
 		gn = new HashMap<>();
 		
-		for (int u : V) {
-			for (int v : V) {
-				Pair<Integer> p = new Pair<Integer>(u, v);
+		for (T u : V) {
+			for (T v : V) {
+				Pair<T> p = new Pair<T>(u, v);
 				int f1 = f.getOrDefault(p, 0);
 				int c1 = c.getOrDefault(p, 0);
 				int r = c1 - f1;
@@ -47,25 +52,25 @@ public class Flow {
 	}
 	
 	// find a new flow through the residual graph
-	boolean findPath(List<Integer> path) {
-		Queue<Integer> q = new ArrayDeque<>();
-		Set<Integer> seen = new HashSet<>();
-		Map<Integer, Integer> prev = new HashMap<>();
+	boolean findPath(List<T> path) {
+		Queue<T> q = new ArrayDeque<>();
+		Set<T> seen = new HashSet<>();
+		Map<T, T> prev = new HashMap<>();
 		// initialize with the starting vertex.
 		q.add(s);
 		seen.add(s);
 		while (!q.isEmpty()) {
-			int n = q.poll();
-			if (n == t) {
-				int p = t;
-				while (p != s) {
+			T n = q.poll();
+			if (n.equals(t)) {
+				T p = t;
+				while (!p.equals(s)) {
 					path.add(0, p);
 					p = prev.get(p);
 				}
 				path.add(0,s);
 				return true;
 			}
-			for (int c : gn.getOrDefault(n, new ArrayList<Integer>())) {
+			for (T c : gn.getOrDefault(n, new ArrayList<T>())) {
 				if (!seen.contains(c)) {
 					seen.add(c);
 					prev.put(c, n);
@@ -76,11 +81,11 @@ public class Flow {
 		return false;
 	}
 	
-	int getFlow(List<Integer> path) {
+	int getFlow(List<T> path) {
 		int flow = Integer.MAX_VALUE;
-		int u = -1;
-		for (int v : path) {
-			if (u != -1) {
+		T u = null;
+		for (T v : path) {
+			if (u != null) {
 				flow = Math.min(flow, cn.get(new Pair<>(u, v)));
 			}
 			u = v;
@@ -88,12 +93,12 @@ public class Flow {
 		return flow;
 	}
 	
-	void addAugmenting(int flow, List<Integer> path) {
-		int u = -1;
-		for (int v : path) {
-			if (u != -1) {
-				Pair<Integer> p = new Pair<>(u, v);
-				Pair<Integer> antip = new Pair<>(v, u);
+	void addAugmenting(int flow, List<T> path) {
+		T u = null;
+		for (T v : path) {
+			if (u != null) {
+				Pair<T> p = new Pair<>(u, v);
+				Pair<T> antip = new Pair<>(v, u);
 				f.put(p, f.getOrDefault(p, 0) + flow);
 				f.put(antip, -f.get(p));
 			}
@@ -102,10 +107,10 @@ public class Flow {
 		
 	}
 	
-	public Map<Pair<Integer>, Integer> solve() {
+	public Map<Pair<T>, Integer> solve() {
 		// loop until there are no more flows
 		while(true) {
-			List<Integer> path = new ArrayList<>();
+			List<T> path = new ArrayList<>();
 			createResidual();
 			if (!findPath(path)) {
 				return f;
@@ -117,10 +122,10 @@ public class Flow {
 		
 	}
 	
-	public static void printGraph(Integer[] V, Map<Pair<Integer>, Integer> f, Map<Pair<Integer>, Integer> c) {
-		for (int u : V) {
-			for (int v : V) {
-				Pair<Integer> p = new Pair<>(u, v);
+	public static void printGraph(String[] V, Map<Pair<String>, Integer> f, Map<Pair<String>, Integer> c) {
+		for (String u : V) {
+			for (String v : V) {
+				Pair<String> p = new Pair<>(u, v);
 				int cap = c.getOrDefault(p, 0);
 				if (cap > 0) {
 					System.out.println(String.format("%s: %s/%s", p, f.getOrDefault(p, 0), cap));
@@ -130,24 +135,26 @@ public class Flow {
 	}
 	
 	public static void main(String[] args) {
-		Integer[] nodes = {s, 1, 2, 3, 4, t};
+		String s = "s";
+		String t = "t";
+		String[] nodes = {s, "n1", "n2", "n3", "n4", t};
 
-		Map<Pair<Integer>, Integer> c = new HashMap<>();
-		c.put(new Pair<>(s, 1), 16);
-		c.put(new Pair<>(s, 2), 13);
-		c.put(new Pair<>(1, 2), 10);
-		c.put(new Pair<>(2, 4), 14);
-		c.put(new Pair<>(1, 3), 12);
-		c.put(new Pair<>(2, 1), 4);
-		c.put(new Pair<>(3, 2), 9);
-		c.put(new Pair<>(2, 4), 14);
-		c.put(new Pair<>(4, 3), 7);
-		c.put(new Pair<>(3, t), 20);
-		c.put(new Pair<>(4, t), 4);
+		Map<Pair<String>, Integer> c = new HashMap<>();
+		c.put(new Pair<>(s, "n1"), 16);
+		c.put(new Pair<>(s, "n2"), 13);
+		c.put(new Pair<>("n1", "n2"), 10);
+		c.put(new Pair<>("n2", "n4"), 14);
+		c.put(new Pair<>("n1", "n3"), 12);
+		c.put(new Pair<>("n2", "n1"), 4);
+		c.put(new Pair<>("n3", "n2"), 9);
+		c.put(new Pair<>("n2", "n4"), 14);
+		c.put(new Pair<>("n4", "n3"), 7);
+		c.put(new Pair<>("n3", t), 20);
+		c.put(new Pair<>("n4", t), 4);
 		
-		Flow f = new Flow();
+		Flow<String> f = new Flow<>(s, t);
 		f.init(nodes, c);
-		Map<Pair<Integer>, Integer> flows = f.solve();
+		Map<Pair<String>, Integer> flows = f.solve();
 		printGraph(nodes, flows, c);
 
 	}
