@@ -105,7 +105,7 @@ class Flow<T> {
 					cn.put(p, r);
 					gn.putIfAbsent(u, 
 							new PriorityQueue<>((T a, T b) -> 
-								Long.compare(d.getOrDefault(b, 0l), d.getOrDefault(a, 0l))));
+								Long.compare(d.getOrDefault(a, 0l), d.getOrDefault(b, 0l))));
 					gn.get(u).add(v);
 				}
 			}
@@ -283,10 +283,12 @@ public class Solution {
 	
 	long maxFlow(Map<Pair<String>, Long> flows) {
 		long f = Long.MIN_VALUE;
-		for (Map.Entry<String, Coord> r : riders.entrySet()) {
-			for (Map.Entry<String, Coord> b : bikes.entrySet()) {
-				long d = r.getValue().dist2(b.getValue());
-				f = Math.max(f, d);
+		for (Map.Entry<Pair<String>, Long> e : flows.entrySet()) {
+			if (e.getValue() > 0) {
+				if (!e.getKey().u.equals(s) && !e.getKey().v.equals(t)) {
+					System.out.println(e.getKey() + " " + riders.get(e.getKey().u).dist2(bikes.get(e.getKey().v)));
+					f = Math.max(f, riders.get(e.getKey().u).dist2(bikes.get(e.getKey().v)));
+				}
 			}
 		}
 		return f;
