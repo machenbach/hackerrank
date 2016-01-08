@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Scanner;
 import java.util.Set;
@@ -69,8 +70,9 @@ class Pair<T> {
 class Flow<T> {
 	Map<Pair<T>, Long> f; // flow function
 	Map<Pair<T>, Long> c; // capacity
+	Map<T, Long> d;		  // distance
 	Map<Pair<T>, Long> cn; // induced capacity
-	Map<T, List<T>> gn; // induced graph
+	Map<T, PriorityQueue<T>> gn; // induced graph
 	List<T> V;				// vertices in the graph (Edges are c)
 	
 	public T s;
@@ -81,9 +83,10 @@ class Flow<T> {
 		this.t= t;
 	}
 	
-	public void init(List<T> nodes, Map<Pair<T>, Long> cap) {
+	public void init(List<T> nodes, Map<Pair<T>, Long> cap, Map<T, Long> d) {
 		V = new ArrayList<>(nodes);
 		c = new HashMap<>(cap);
+		this.d = new HashMap<>(d);
 		f = new HashMap<>();
 	}
 	
@@ -100,7 +103,9 @@ class Flow<T> {
 				long r = c1 - f1;
 				if (r > 0) {
 					cn.put(p, r);
-					gn.putIfAbsent(u, new ArrayList<>());
+					gn.putIfAbsent(u, 
+							new PriorityQueue<>((T a, T b) -> 
+								Long.compare(d.getOrDefault(b, 0l), d.getOrDefault(a, 0l))));
 					gn.get(u).add(v);
 				}
 			}
@@ -126,7 +131,7 @@ class Flow<T> {
 				path.add(0,s);
 				return true;
 			}
-			for (T c : gn.getOrDefault(n, new ArrayList<T>())) {
+			for (T c : gn.getOrDefault(n, new PriorityQueue<T>())) {
 				if (!seen.contains(c)) {
 					seen.add(c);
 					prev.put(c, n);
@@ -214,9 +219,7 @@ public class Solution {
 	Map<String, Coord> riders;
 	Map<String, Coord> bikes;
 	
-	
-	Map<Integer, Set<Integer>> dr;	// distinct riders
-	Map<Integer, Set<Integer>> db;	// 
+	Map<String, Long> dist;	// minimum distance for rider to bike
 	
 	
 	public void init (Scanner in) {
@@ -225,15 +228,23 @@ public class Solution {
 		k = in.nextInt();
 		
 		riders = new HashMap<>();
-		dr = new HashMap<>();
 		for (int i=0; i < rn; i++) {
 			riders.put("R" + i, new Coord(in.nextInt(), in.nextInt()));
 		}
 		
 		bikes = new HashMap<>();
-		db = new HashMap<>();
 		for (int i = 0; i < bn; i++) {
 			bikes.put("B" + i, new Coord(in.nextInt(), in.nextInt()));
+		}
+		
+		// compute the distance array
+		dist = new HashMap<>();
+		for (String r : riders.keySet()) {
+			long d = Long.MAX_VALUE;
+			for (String b : bikes.keySet()) {
+				d = Math.min(d, riders.get(r).dist2(bikes.get(b)));
+			}
+			dist.put(r, d);
 		}
 		
 	}
@@ -247,7 +258,6 @@ public class Solution {
 		return n;
 	}
 	
-	long maxOuter = Long.MIN_VALUE;
 	
 	Map<Pair<String>, Long> capacity() {
 		Map<Pair<String>, Long> c = new HashMap<>();
@@ -255,40 +265,36 @@ public class Solution {
 		for (String r : riders.keySet()) {
 			for (String b : bikes.keySet()) {
 				Pair<String> p = new Pair<>(r, b);
-				long d = riders.get(r).dist2(bikes.get(b));
-				maxOuter = Math.max(maxOuter, d);
-				c.put(p, d);
+				c.put(p, 1l);
 			}
 		}
 		
-		maxOuter++;
-		// now use one of the fancy new mapping functions
-		c.replaceAll((k, v) -> maxOuter-v);
 		// add the source
 		for (String r : riders.keySet()) {
-			c.put(new Pair<>(s, r), Long.MAX_VALUE);
+			c.put(new Pair<>(s, r), 1l);
 		}
 		
 		// and the sink
 		for (String b : bikes.keySet()) {
-			c.put(new Pair<>(b, t), Long.MAX_VALUE);
+			c.put(new Pair<>(b, t), 1l);
 		}
 		return c;
 	}
 	
 	long maxFlow(Map<Pair<String>, Long> flows) {
 		long f = Long.MIN_VALUE;
-		for (String r : riders.keySet()) {
-			for (String b : bikes.keySet()) {
-				f = Math.max(f, flows.getOrDefault(new Pair<>(r, b), 0l));
+		for (Map.Entry<String, Coord> r : riders.entrySet()) {
+			for (Map.Entry<String, Coord> b : bikes.entrySet()) {
+				long d = r.getValue().dist2(b.getValue());
+				f = Math.max(f, d);
 			}
 		}
-		return maxOuter - f;
+		return f;
 	}
 	
 	public long solve() {
 		Flow<String> f = new Flow<>(s, t);
-		f.init(nodes(), capacity());
+		f.init(nodes(), capacity(), dist);
 		Map<Pair<String>, Long> flows = f.solve();
 		return maxFlow(flows);
 	}
