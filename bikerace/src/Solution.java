@@ -1,13 +1,32 @@
-import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
-import java.util.Queue;
 import java.util.Scanner;
-import java.util.Set;
+
+class HashDefault<K, V> extends HashMap<K, V> {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	V defval;
+	public HashDefault(V defval) {
+		this.defval = defval;
+	}
+	
+	public HashDefault(Map<K, V> m, V defval) {
+		super(m);
+		this.defval = defval;
+	}
+	
+	@Override
+	public V get(Object key) {
+		return super.getOrDefault(key, defval);
+	}
+}
 
 
 class Pair<T> {
@@ -70,9 +89,10 @@ class Pair<T> {
 class Flow<T> {
 	Map<Pair<T>, Long> f; // flow function
 	Map<Pair<T>, Long> c; // capacity
-	Map<T, Long> d;		  // distance
+	Map<Pair<T>, Long> w; // weights between nodes
+	
 	Map<Pair<T>, Long> cn; // induced capacity
-	Map<T, PriorityQueue<T>> gn; // induced graph
+	Map<T, List<T>> gn; // induced graph
 	List<T> V;				// vertices in the graph (Edges are c)
 	
 	public T s;
@@ -83,10 +103,10 @@ class Flow<T> {
 		this.t= t;
 	}
 	
-	public void init(List<T> nodes, Map<Pair<T>, Long> cap, Map<T, Long> d) {
+	public void init(List<T> nodes, Map<Pair<T>, Long> cap, Map<Pair<T>, Long> w) {
 		V = new ArrayList<>(nodes);
 		c = new HashMap<>(cap);
-		this.d = new HashMap<>(d);
+		this.w = new HashDefault<>(w, Long.MAX_VALUE);
 		f = new HashMap<>();
 	}
 	
@@ -103,43 +123,87 @@ class Flow<T> {
 				long r = c1 - f1;
 				if (r > 0) {
 					cn.put(p, r);
-					gn.putIfAbsent(u, 
-							new PriorityQueue<>((T a, T b) -> 
-								Long.compare(d.getOrDefault(a, 0l), d.getOrDefault(b, 0l))));
+					gn.putIfAbsent(u, new LinkedList<>());
 					gn.get(u).add(v);
 				}
 			}
 		}
 	}
 	
-	// find a new flow through the residual graph
+	class Node implements Comparable<Node> {
+		public T n;
+		public Long d;
+		
+		public Node(T n) {
+			this.n = n;
+			this.d = Long.MAX_VALUE;
+		}
+
+		public Node(T n, Long d) {
+			this.n = n;
+			this.d = d;
+		}
+
+		@Override
+		public int compareTo(Flow<T>.Node o) {
+			return d.compareTo(o.d);
+		}
+		
+		@Override
+		public String toString() {
+			return String.format("(%s, %s)", n, d);
+		}
+	}
+	
+	long ladd(long a, long b) {
+		if (a == Long.MAX_VALUE || b == Long.MAX_VALUE) {
+			return Long.MAX_VALUE;
+		}
+		return a + b;
+	}
+	
+	// find a new path through the residual graph using Dijsktra's algorthim
 	boolean findPath(List<T> path) {
-		Queue<T> q = new ArrayDeque<>();
-		Set<T> seen = new HashSet<>();
 		Map<T, T> prev = new HashMap<>();
+		Map<T, Node> nodes = new HashMap<>();
+
+		PriorityQueue<Node> q = new PriorityQueue<Node>();
 		// initialize with the starting vertex.
-		q.add(s);
-		seen.add(s);
-		while (!q.isEmpty()) {
-			T n = q.poll();
-			if (n.equals(t)) {
-				T p = t;
-				while (!p.equals(s)) {
-					path.add(0, p);
-					p = prev.get(p);
-				}
-				path.add(0,s);
-				return true;
+		Node ns = new Node(s, 0l);
+		nodes.put(s, ns);
+		q.add(ns);
+		while (true) {
+			if (q.isEmpty()) {
+				return false;
 			}
-			for (T c : gn.getOrDefault(n, new PriorityQueue<T>())) {
-				if (!seen.contains(c)) {
-					seen.add(c);
-					prev.put(c, n);
-					q.add(c);
+			Node node = q.poll();
+			if (node.n.equals(t)) {
+				break;
+			}
+			for (T c : gn.getOrDefault(node.n, new LinkedList<T>())) {
+				Pair<T> p = new Pair<>(node.n, c);
+				if (!nodes.containsKey(c)) {
+					nodes.put(c, new Node(c));
+				}
+				Node cnode = nodes.get(c);
+				if (cnode.d > ladd(node.d, w.get(p))) {
+					if (q.contains(cnode)) {
+						q.remove(cnode);
+					}
+					cnode.d = ladd(node.d, w.get(p));
+					prev.put(c, node.n);
+					q.add(cnode);
 				}
 			}
 		}
-		return false;
+		
+		T p = t;
+		while (!p.equals(s)) {
+			path.add(0, p);
+			p = prev.get(p);
+		}
+		path.add(0,s);
+		return true;
 	}
 	
 	long getFlow(List<T> path) {
@@ -216,10 +280,12 @@ public class Solution {
 	String s = "S";
 	String t = "T";
 	
+	String s1 = "S1";
+	String t1 = "T1";
+	
 	Map<String, Coord> riders;
 	Map<String, Coord> bikes;
-	
-	Map<String, Long> dist;	// minimum distance for rider to bike
+	Map<Pair<String>, Long> weight; 	// pairwise weights
 	
 	
 	public void init (Scanner in) {
@@ -227,24 +293,31 @@ public class Solution {
 		bn = in.nextInt();
 		k = in.nextInt();
 		
+		weight = new HashMap<>();
+		weight.put(new Pair<String>(s, s1), 0l);
+		weight.put(new Pair<String>(t1, t), 0l);
+
 		riders = new HashMap<>();
 		for (int i=0; i < rn; i++) {
-			riders.put("R" + i, new Coord(in.nextInt(), in.nextInt()));
+			String r = String.format("R%s", i);
+			riders.put(r, new Coord(in.nextInt(), in.nextInt()));
+			// weight of path from start to rider is 0
+			weight.put(new Pair<>(s1, r), 0l);
 		}
 		
 		bikes = new HashMap<>();
 		for (int i = 0; i < bn; i++) {
+			String b = String.format("B%s", i);
 			bikes.put("B" + i, new Coord(in.nextInt(), in.nextInt()));
+			// weight of path from bike to t is 0
+			weight.put(new Pair<>(b, t1), 0l);
 		}
 		
-		// compute the distance array
-		dist = new HashMap<>();
+		// compute the weight array
 		for (String r : riders.keySet()) {
-			long d = Long.MAX_VALUE;
 			for (String b : bikes.keySet()) {
-				d = Math.min(d, riders.get(r).dist2(bikes.get(b)));
+				weight.put(new Pair<>(r,b), riders.get(r).dist2(bikes.get(b)));
 			}
-			dist.put(r, d);
 		}
 		
 	}
@@ -252,8 +325,10 @@ public class Solution {
 	List<String> nodes() {
 		List<String> n = new ArrayList<>();
 		n.add(s);
+		n.add(s1);
 		n.addAll(riders.keySet());
 		n.addAll(bikes.keySet());
+		n.add(t1);
 		n.add(t);
 		return n;
 	}
@@ -271,32 +346,47 @@ public class Solution {
 		
 		// add the source
 		for (String r : riders.keySet()) {
-			c.put(new Pair<>(s, r), 1l);
+			c.put(new Pair<>(s1, r), 1l);
 		}
 		
 		// and the sink
 		for (String b : bikes.keySet()) {
-			c.put(new Pair<>(b, t), 1l);
+			c.put(new Pair<>(b, t1), 1l);
 		}
+		
+		c.put(new Pair<>(s, s1), (long)k);
+		c.put(new Pair<>(t1, t), (long)k);
 		return c;
 	}
 	
 	long maxFlow(Map<Pair<String>, Long> flows) {
-		long f = Long.MIN_VALUE;
+		List<Long> l = new ArrayList<>();
+		Map<Long, Pair<String>> tmp = new HashMap<>();
+		
 		for (Map.Entry<Pair<String>, Long> e : flows.entrySet()) {
 			if (e.getValue() > 0) {
-				if (!e.getKey().u.equals(s) && !e.getKey().v.equals(t)) {
-					System.out.println(e.getKey() + " " + riders.get(e.getKey().u).dist2(bikes.get(e.getKey().v)));
-					f = Math.max(f, riders.get(e.getKey().u).dist2(bikes.get(e.getKey().v)));
+				if (!e.getKey().u.equals(s) && !e.getKey().v.equals(t)
+						&& !e.getKey().u.equals(s1) && !e.getKey().v.equals(t1)) {
+					long d = riders.get(e.getKey().u).dist2(bikes.get(e.getKey().v));
+					l.add(d);
+					tmp.put(d, e.getKey());
 				}
 			}
 		}
-		return f;
+		Collections.sort(l);
+		
+		System.out.println("+---");
+		int i = 1;
+		for (long lo : l) {
+			System.out.println(i++ + " " + lo + " " + tmp.get(lo));
+		}
+		System.out.println("+---");
+		return l.get(k - 1);
 	}
 	
 	public long solve() {
 		Flow<String> f = new Flow<>(s, t);
-		f.init(nodes(), capacity(), dist);
+		f.init(nodes(), capacity(), weight);
 		Map<Pair<String>, Long> flows = f.solve();
 		return maxFlow(flows);
 	}
