@@ -1,11 +1,13 @@
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.PriorityQueue;
 import java.util.Scanner;
+import java.util.Set;
 
 class HashDefault<K, V> extends HashMap<K, V> {
 	/**
@@ -36,6 +38,10 @@ class Pair<T> {
 	public Pair(T u, T v) {
 		this.u = u;
 		this.v = v;
+	}
+	
+	public Pair<T> antipair() {
+		return new Pair<>(v, u);
 	}
 
 	@Override
@@ -85,7 +91,7 @@ class Pair<T> {
 }
 
 
-
+// Making this work for bipartite graph
 class Flow<T> {
 	Map<Pair<T>, Long> f; // flow function
 	Map<Pair<T>, Long> c; // capacity
@@ -93,7 +99,9 @@ class Flow<T> {
 	
 	Map<Pair<T>, Long> cn; // induced capacity
 	Map<T, List<T>> gn; // induced graph
-	List<T> V;				// vertices in the graph (Edges are c)
+	Set<T> A;			// one set
+	Set<T> B;			// the other
+	Set<T> V;			// A U B
 	
 	public T s;
 	public T t;
@@ -103,8 +111,13 @@ class Flow<T> {
 		this.t= t;
 	}
 	
-	public void init(List<T> nodes, Map<Pair<T>, Long> cap, Map<Pair<T>, Long> w) {
-		V = new ArrayList<>(nodes);
+	public void init(Set<T> a, Set<T> b, Map<Pair<T>, Long> cap, Map<Pair<T>, Long> w) {
+		this.A = new HashSet<>(a);
+		this.B = new HashSet<>(b);
+		V = new HashSet<>(A);
+		V.addAll(B);
+		V.add(s);
+		V.add(t);
 		c = new HashMap<>(cap);
 		this.w = new HashDefault<>(w, Long.MAX_VALUE);
 		f = new HashMap<>();
@@ -162,24 +175,23 @@ class Flow<T> {
 		return a + b;
 	}
 	
-	// find a new path through the residual graph using Dijsktra's algorthim
+	
+	// find a new path through the residual graph using Bellman-Ford algorithm
 	boolean findPath(List<T> path) {
+		// need to add check for negative cycles
 		Map<T, T> prev = new HashMap<>();
 		Map<T, Node> nodes = new HashMap<>();
+		Set<Node> inQueue = new HashSet<>();
 
-		PriorityQueue<Node> q = new PriorityQueue<Node>();
+		Deque<Node> q = new LinkedList<Node>();
 		// initialize with the starting vertex.
 		Node ns = new Node(s, 0l);
 		nodes.put(s, ns);
-		q.add(ns);
-		while (true) {
-			if (q.isEmpty()) {
-				return false;
-			}
-			Node node = q.poll();
-			if (node.n.equals(t)) {
-				break;
-			}
+		q.push(ns);
+		inQueue.add(ns);
+		while (!q.isEmpty()) {
+			Node node = q.pop();
+			inQueue.remove(node);
 			for (T c : gn.getOrDefault(node.n, new LinkedList<T>())) {
 				Pair<T> p = new Pair<>(node.n, c);
 				if (!nodes.containsKey(c)) {
@@ -187,14 +199,19 @@ class Flow<T> {
 				}
 				Node cnode = nodes.get(c);
 				if (cnode.d > ladd(node.d, w.get(p))) {
-					if (q.contains(cnode)) {
-						q.remove(cnode);
-					}
 					cnode.d = ladd(node.d, w.get(p));
 					prev.put(c, node.n);
-					q.add(cnode);
+					if (!inQueue.contains(cnode)) {
+						q.add(cnode);
+						inQueue.add(cnode);
+					}
 				}
 			}
+		}
+		
+		// return false if no path
+		if (prev.get(t) == null) {
+			return false;
 		}
 		
 		T p = t;
@@ -218,14 +235,35 @@ class Flow<T> {
 		return flow;
 	}
 	
+	void printflows() {
+		System.out.println("---");
+		for (Map.Entry<Pair<T>, Long> e : f.entrySet()) {
+			if (e.getValue() > 0) {
+				if (!e.getKey().u.equals(s) && !e.getKey().v.equals(t)) {
+					System.out.println(e.getKey() + " " + w.get(e.getKey()));
+				}
+			}
+		}
+
+	}
+	
 	void addAugmenting(long flow, List<T> path) {
 		T u = null;
 		for (T v : path) {
 			if (u != null) {
 				Pair<T> p = new Pair<>(u, v);
-				Pair<T> antip = new Pair<>(v, u);
 				f.put(p, f.getOrDefault(p, 0l) + flow);
-				f.put(antip, -f.get(p));
+				f.put(p.antipair(), -f.get(p));
+				// if v is bike, add cancelling weight
+				long wneg = - w.get(p);
+				if (B.contains(v)) {
+					for (T u1 : A) {
+						if (u != u1) {
+							Pair<T> p1 = new Pair<>(v, u1);
+							w.put(p1, wneg);
+						}
+					}
+				}
 			}
 			u = v;
 		}
@@ -242,6 +280,7 @@ class Flow<T> {
 			}
 			long flow = getFlow(path);
 			addAugmenting(flow, path);
+			printflows();
 		}
 		
 	}
@@ -280,9 +319,6 @@ public class Solution {
 	String s = "S";
 	String t = "T";
 	
-	String s1 = "S1";
-	String t1 = "T1";
-	
 	Map<String, Coord> riders;
 	Map<String, Coord> bikes;
 	Map<Pair<String>, Long> weight; 	// pairwise weights
@@ -294,15 +330,12 @@ public class Solution {
 		k = in.nextInt();
 		
 		weight = new HashMap<>();
-		weight.put(new Pair<String>(s, s1), 0l);
-		weight.put(new Pair<String>(t1, t), 0l);
-
 		riders = new HashMap<>();
 		for (int i=0; i < rn; i++) {
 			String r = String.format("R%s", i);
 			riders.put(r, new Coord(in.nextInt(), in.nextInt()));
 			// weight of path from start to rider is 0
-			weight.put(new Pair<>(s1, r), 0l);
+			weight.put(new Pair<>(s, r), 0l);
 		}
 		
 		bikes = new HashMap<>();
@@ -310,28 +343,19 @@ public class Solution {
 			String b = String.format("B%s", i);
 			bikes.put("B" + i, new Coord(in.nextInt(), in.nextInt()));
 			// weight of path from bike to t is 0
-			weight.put(new Pair<>(b, t1), 0l);
+			weight.put(new Pair<>(b, t), 0l);
 		}
 		
 		// compute the weight array
 		for (String r : riders.keySet()) {
 			for (String b : bikes.keySet()) {
 				weight.put(new Pair<>(r,b), riders.get(r).dist2(bikes.get(b)));
+				
 			}
 		}
 		
 	}
 	
-	List<String> nodes() {
-		List<String> n = new ArrayList<>();
-		n.add(s);
-		n.add(s1);
-		n.addAll(riders.keySet());
-		n.addAll(bikes.keySet());
-		n.add(t1);
-		n.add(t);
-		return n;
-	}
 	
 	
 	Map<Pair<String>, Long> capacity() {
@@ -341,21 +365,20 @@ public class Solution {
 			for (String b : bikes.keySet()) {
 				Pair<String> p = new Pair<>(r, b);
 				c.put(p, 1l);
+				c.put(p.antipair(), 1l);
 			}
 		}
 		
 		// add the source
 		for (String r : riders.keySet()) {
-			c.put(new Pair<>(s1, r), 1l);
+			c.put(new Pair<>(s, r), 1l);
 		}
 		
 		// and the sink
 		for (String b : bikes.keySet()) {
-			c.put(new Pair<>(b, t1), 1l);
+			c.put(new Pair<>(b, t), 1l);
 		}
 		
-		c.put(new Pair<>(s, s1), (long)k);
-		c.put(new Pair<>(t1, t), (long)k);
 		return c;
 	}
 	
@@ -365,8 +388,7 @@ public class Solution {
 		
 		for (Map.Entry<Pair<String>, Long> e : flows.entrySet()) {
 			if (e.getValue() > 0) {
-				if (!e.getKey().u.equals(s) && !e.getKey().v.equals(t)
-						&& !e.getKey().u.equals(s1) && !e.getKey().v.equals(t1)) {
+				if (!e.getKey().u.equals(s) && !e.getKey().v.equals(t)) {
 					long d = riders.get(e.getKey().u).dist2(bikes.get(e.getKey().v));
 					l.add(d);
 					tmp.put(d, e.getKey());
@@ -386,7 +408,7 @@ public class Solution {
 	
 	public long solve() {
 		Flow<String> f = new Flow<>(s, t);
-		f.init(nodes(), capacity(), weight);
+		f.init(riders.keySet(), bikes.keySet(), capacity(), weight);
 		Map<Pair<String>, Long> flows = f.solve();
 		return maxFlow(flows);
 	}
