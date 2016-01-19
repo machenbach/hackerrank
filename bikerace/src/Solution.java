@@ -1,8 +1,8 @@
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +15,7 @@ class HashDefault<K, V> extends HashMap<K, V> {
 	 */
 	private static final long serialVersionUID = 1L;
 	V defval;
+	
 	public HashDefault(V defval) {
 		this.defval = defval;
 	}
@@ -99,6 +100,8 @@ class Flow<T> {
 	
 	Map<Pair<T>, Long> cn; // induced capacity
 	Map<T, List<T>> gn; // induced graph
+	Set<T> Vn;			// nodes in the induced graph
+
 	Set<T> A;			// one set
 	Set<T> B;			// the other
 	Set<T> V;			// A U B
@@ -118,104 +121,50 @@ class Flow<T> {
 		V.addAll(B);
 		V.add(s);
 		V.add(t);
-		c = new HashMap<>(cap);
+		c = new HashDefault<>(cap, 0l);
 		this.w = new HashDefault<>(w, Long.MAX_VALUE);
-		f = new HashMap<>();
-	}
-	
-	// use the current flows to create a new residual graph
-	void createResidual() {
-		cn = new HashMap<>();
-		gn = new HashMap<>();
-		
-		for (T u : V) {
-			for (T v : V) {
-				Pair<T> p = new Pair<T>(u, v);
-				long f1 = f.getOrDefault(p, 0l);
-				long c1 = c.getOrDefault(p, 0l);
-				long r = c1 - f1;
-				if (r > 0) {
-					cn.put(p, r);
-					gn.putIfAbsent(u, new LinkedList<>());
-					gn.get(u).add(v);
-				}
-			}
-		}
-	}
-	
-	class Node implements Comparable<Node> {
-		public T n;
-		public Long d;
-		
-		public Node(T n) {
-			this.n = n;
-			this.d = Long.MAX_VALUE;
-		}
-
-		public Node(T n, Long d) {
-			this.n = n;
-			this.d = d;
-		}
-
-		@Override
-		public int compareTo(Flow<T>.Node o) {
-			return d.compareTo(o.d);
-		}
-		
-		@Override
-		public String toString() {
-			return String.format("(%s, %s)", n, d);
-		}
-	}
-	
-	long ladd(long a, long b) {
-		if (a == Long.MAX_VALUE || b == Long.MAX_VALUE) {
-			return Long.MAX_VALUE;
-		}
-		return a + b;
+		f = new HashDefault<>(0l);
 	}
 	
 	
 	// find a new path through the residual graph using Bellman-Ford algorithm
 	boolean findPath(List<T> path) {
-		// need to add check for negative cycles
 		Map<T, T> prev = new HashMap<>();
-		Map<T, Node> nodes = new HashMap<>();
-		Set<Node> inQueue = new HashSet<>();
-
-		Deque<Node> q = new LinkedList<Node>();
-		// initialize with the starting vertex.
-		Node ns = new Node(s, 0l);
-		nodes.put(s, ns);
-		q.push(ns);
-		inQueue.add(ns);
-		while (!q.isEmpty()) {
-			Node node = q.pop();
-			inQueue.remove(node);
-			for (T c : gn.getOrDefault(node.n, new LinkedList<T>())) {
-				Pair<T> p = new Pair<>(node.n, c);
-				if (!nodes.containsKey(c)) {
-					nodes.put(c, new Node(c));
-				}
-				Node cnode = nodes.get(c);
-				if (cnode.d > ladd(node.d, w.get(p))) {
-					cnode.d = ladd(node.d, w.get(p));
-					prev.put(c, node.n);
-					if (!inQueue.contains(cnode)) {
-						q.add(cnode);
-						inQueue.add(cnode);
+		// create distances, default is infinity, value at start is 0
+		Map<T, Long> d = new HashDefault<>(Long.MAX_VALUE);
+		d.put(s, 0l);
+		
+		for (int i = 0; i < Vn.size(); i++) {
+			// for each edge
+			for (T u : gn.keySet()) {
+				for (T v : gn.get(u)) {
+					// relax the edge
+					Pair<T> p = new Pair<>(u, v);
+					long dist = ladd(d.get(u), w.get(p));
+					if (d.get(v) > dist) {
+						d.put(v, dist);
+						prev.put(v, u);
 					}
 				}
 			}
 		}
 		
-		// return false if no path
-		if (prev.get(t) == null) {
-			return false;
+		// check for negative cycles
+		for (T u : gn.keySet()) {
+			for (T v : gn.get(u)) {
+				if (d.get(v) > ladd(d.get(u), w.get(new Pair<>(u, v)))) {
+					System.out.println("neg cycle");
+					return false;
+				}
+			}
 		}
 		
 		T p = t;
-		while (!p.equals(s)) {
+		while (!s.equals(p)) {
+			if (p == null) {
+				System.out.println("no path");
+				return false;
+			}
 			path.add(0, p);
 			p = prev.get(p);
 		}
@@ -247,40 +196,90 @@ class Flow<T> {
 
 	}
 	
-	void addAugmenting(long flow, List<T> path) {
-		T u = null;
-		for (T v : path) {
-			if (u != null) {
-				Pair<T> p = new Pair<>(u, v);
-				f.put(p, f.getOrDefault(p, 0l) + flow);
-				f.put(p.antipair(), -f.get(p));
-				// if v is bike, add cancelling weight
-				long wneg = - w.get(p);
-				if (B.contains(v)) {
-					for (T u1 : A) {
-						if (u != u1) {
-							Pair<T> p1 = new Pair<>(v, u1);
-							w.put(p1, wneg);
-						}
-					}
-				}
-			}
-			u = v;
+	void removeNegativeWeights() {
+		Iterator<Map.Entry<Pair<T>, Long>> it = w.entrySet().iterator();
+		while (it.hasNext()) {
+			long l = it.next().getValue();
+			if (l < 0) it.remove();
 		}
 		
 	}
 	
+	// return the element of B in this path
+	Pair<T> addAugmenting(long flow, List<T> path) {
+		Pair<T> lastP = null;
+		if (path.size() < 2) return null;
+		T u = path.remove(0);
+		removeNegativeWeights();
+		for (T v : path) {
+			Pair<T> p = new Pair<>(u, v);
+			f.put(p, f.get(p) + flow);
+			f.put(p.antipair(), -f.get(p));
+			if (B.contains(v)) {
+				lastP = p;
+			}
+			u = v;
+		}
+		return lastP;
+	}
+	
+	// use the current flows to create a new residual graph
+	void createResidual(Pair<T> lastP) {
+		cn = new HashMap<>();
+		gn = new HashMap<>();
+		Vn = new HashSet<>();
+		
+		for (T u : V) {
+			for (T v : V) {
+				Pair<T> p = new Pair<T>(u, v);
+				long f1 = f.get(p);
+				long c1 = c.get(p);
+				long r = c1 - f1;
+				if (r > 0) {
+					Vn.add(u);
+					Vn.add(v);
+					cn.put(p, r);
+					gn.putIfAbsent(u, new LinkedList<>());
+					gn.get(u).add(v);
+				}
+			}
+		}
+		
+		if (lastP == null) return;
+		// we now need to add a negative weight to w from the last B to some element of A
+		removeNegativeWeights();
+		for (T u : Vn) {
+			if (A.contains(u)) {
+				Pair<T> p = new Pair<>(lastP.v, u);
+				w.put(p, -w.get(lastP));
+				if (!cn.containsKey(p)) {
+					cn.put(p, 1l);
+				}
+				gn.putIfAbsent(lastP.v, new ArrayList<>());
+				gn.get(lastP.v).add(u);
+			}
+		}
+	}
+	
+	long ladd(long a, long b) {
+		if (a == Long.MAX_VALUE || b == Long.MAX_VALUE) {
+			return Long.MAX_VALUE;
+		}
+		return a + b;
+	}
+	
 	public Map<Pair<T>, Long> solve() {
 		// loop until there are no more flows
+		Pair<T> lastP = null;
 		while(true) {
 			List<T> path = new ArrayList<>();
-			createResidual();
+			createResidual(lastP);
 			if (!findPath(path)) {
 				return f;
 			}
 			long flow = getFlow(path);
-			addAugmenting(flow, path);
-			printflows();
+			lastP = addAugmenting(flow, path);
+			//printflows();
 		}
 		
 	}
@@ -365,7 +364,6 @@ public class Solution {
 			for (String b : bikes.keySet()) {
 				Pair<String> p = new Pair<>(r, b);
 				c.put(p, 1l);
-				c.put(p.antipair(), 1l);
 			}
 		}
 		
@@ -387,12 +385,11 @@ public class Solution {
 		Map<Long, Pair<String>> tmp = new HashMap<>();
 		
 		for (Map.Entry<Pair<String>, Long> e : flows.entrySet()) {
-			if (e.getValue() > 0) {
-				if (!e.getKey().u.equals(s) && !e.getKey().v.equals(t)) {
-					long d = riders.get(e.getKey().u).dist2(bikes.get(e.getKey().v));
-					l.add(d);
-					tmp.put(d, e.getKey());
-				}
+			if (e.getValue() > 0 && riders.containsKey(e.getKey().u) 
+					&& bikes.containsKey(e.getKey().v)) {
+				long d = riders.get(e.getKey().u).dist2(bikes.get(e.getKey().v));
+				l.add(d);
+				tmp.put(d, e.getKey());
 			}
 		}
 		Collections.sort(l);
@@ -402,8 +399,8 @@ public class Solution {
 		for (long lo : l) {
 			System.out.println(i++ + " " + lo + " " + tmp.get(lo));
 		}
-		System.out.println("+---");
-		return l.get(k - 1);
+		if (l.size() < k) return 0l;
+		return (l.get(k-1));
 	}
 	
 	public long solve() {
