@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Scanner;
 import java.util.Set;
 
@@ -102,42 +103,34 @@ class Combo {
 
 public class Solution {
 	Map<Integer, Combo> combos;
-	Map<Integer, List<Integer>> tree;
-	Set<Integer> root;
+	Map<Integer, List<Integer>> edges;
+	Set<Integer> seen;
 	int N;
 	int K;
+	int startNode;
 	
 	public Solution(int n, int k) {
 		N = n;
 		K = k;
-		tree = new HashMap<>();
-		root = new HashSet<>();
+		edges = new HashMap<>();
 		combos = new HashMap<>();
-		for (int i = 1; i <= N; i++) {
-			root.add(i);
-		}
 	}
 	
 	void addLink (int p, int c) {
-		tree.putIfAbsent(p, new LinkedList<>());
-		tree.get(p).add(c);
-		
+		edges.putIfAbsent(p, new LinkedList<>());
+		edges.get(p).add(c);
+		edges.putIfAbsent(c, new LinkedList<>());
+		edges.get(c).add(p);
 	}
 	
-	public int init(Scanner in) {
+	public void init(Scanner in) {
 		// build the tree
 		for (int i = 1; i < N; i++) {
 			int p = in.nextInt();
 			int c = in.nextInt();
-			root.remove(c);
 			addLink(p, c);
+			startNode = p;
 		}
-		if (root.size() == 1) {
-			for(int i : root) {
-				return i;
-			}
-		}
-		return 0;	// this can't be right
 	}
 	
 	Combo getCombo(int n) {
@@ -145,14 +138,25 @@ public class Solution {
 		return combos.get(n);
 	}
 	
+	int unseenEdges(int node) {
+		int r = 0;
+		
+		for (int i : edges.get(node)) {
+			if (!seen.contains(i)) r++;
+		}
+		return r;
+	}
+	
 	// The number of cuts at this node.  
 	BigInteger cutsAtNode(int node) {
-		if (tree.get(node) == null) {
+		if (edges.get(node) == null) {
 			// no children, the single uplink
 			return BigInteger.ONE;
 		}
 		
-		int n = tree.get(node).size();
+		int n = unseenEdges(node);
+		
+		if (n == 0) return BigInteger.ONE;
 		
 		Combo combo = getCombo(n);
 		// downlinks are the sum of combinations taken 
@@ -161,17 +165,29 @@ public class Solution {
 		return c.add(BigInteger.ONE);
 	}
 	
-	BigInteger cutsAtTree(int node) {
-		BigInteger res = cutsAtNode(node);
-		for (int c : tree.get(node)) {
-			res = res.add(cutsAtNode(c));
+	
+	public BigInteger solve(int start) {
+		// we will traverse the graph BFS.  Start at any node
+		if (edges.get(start) == null || edges.get(start).size() == 0) {
+			return BigInteger.ZERO;
+		}
+		Queue<Integer> q = new LinkedList<>();
+		seen = new HashSet<>();
+		seen.add(start);
+		q.add(start);
+		
+		BigInteger res = BigInteger.ONE;
+		while (!q.isEmpty()) {
+			int node = q.poll();
+			res = res.add(cutsAtNode(node));
+			for (int c : edges.get(node)) {
+				if (!seen.contains(c)) {
+					seen.add(c);
+					q.add(c);
+				}
+			}
 		}
 		return res;
-	}
-	
-	public BigInteger solve(int root) {
-		// all the trees, plus the empty set
-		return  cutsAtTree(root).add(BigInteger.ONE);
 	}
 	
 
@@ -181,15 +197,11 @@ public class Solution {
 		int k = in.nextInt();
 		
 		Solution s = new Solution(n, k);
-		int root = s.init(in);
+		s.init(in);
 		in.close();
-		if (root > 0) {
-			System.out.println(s.solve(root));
+		for (int i = 1; i <=n; i++) {
+			System.out.println(i + " " + s.solve(i));
 		}
-		else {
-			System.out.println("Something has gone terribly wrong");
-		}
-
 	}
 
 }
