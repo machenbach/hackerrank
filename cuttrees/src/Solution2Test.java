@@ -18,8 +18,12 @@ public class Solution2Test {
 
 	@Test
 	public void test2() throws FileNotFoundException {
-		System.out.println("Test 2");
 		System.setIn(new FileInputStream("test2.txt"));
+		Solution2.main(null);
+	}
+	@Test
+	public void test3() throws FileNotFoundException {
+		System.setIn(new FileInputStream("test3.txt"));
 		Solution2.main(null);
 	}
 
