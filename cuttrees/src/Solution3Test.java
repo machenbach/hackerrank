@@ -34,12 +34,5 @@ public class Solution3Test {
 		System.setIn(new FileInputStream("test4.txt"));
 		Solution3.main(null);
 	}
-	@Test
-	public void sumlstTest() {
-		Solution3 s = new Solution3(1, 2);
-		long[] a = {1, 1, 1};
-		List<Long> al = Arrays.stream(a).boxed().collect(Collectors.toList());
-		System.out.println(s.sumlist(al));
-	}
 
 }
