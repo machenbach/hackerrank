@@ -1,4 +1,3 @@
-import java.util.BitSet;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -8,8 +7,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Scanner;
 import java.util.Set;
-
-import org.omg.PortableInterceptor.INACTIVE;
 
 class Subtree {
 	public Set<Integer> subtree;
