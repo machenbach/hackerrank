@@ -1,11 +1,9 @@
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.Set;
 public class Solution3 {
 
 	int maxEdges;
@@ -75,14 +73,12 @@ public class Solution3 {
 	}
 	
 	public long sumlist(List<Long> s) {
-		if (s.isEmpty()) return 0l;
+		int n = s.size();
 		long tot = 0;
 		for (long l : s) {
-			List<Long> st = new ArrayList<>(s);
-			st.remove(l);
-			tot += (l + sumlist(st));
+			tot+=l;
 		}
-		return tot;
+		return tot * (1l << (n-1));
 	}
 	
 	public long sumlist2(List<Long> s, int max) {
@@ -95,12 +91,13 @@ public class Solution3 {
 		}
 		return tot;
 	}
+	
 	public long subcount(int r, int d) {
 		List<Long> l = new ArrayList<>();
 		for (int c : children.get(r)) {
 			l.add(subcount(c, d+1));
 		}
-		return sumlist(l) + d;
+		return sumlist(l) + 1;
 	}
 	
 	public long subcount() {
@@ -134,7 +131,7 @@ public class Solution3 {
 		Solution3 s = new Solution3(n, k);
 		s.init(in);
 		in.close();
-		System.out.println(s.cutcount());
+		System.out.println(s.subcount());
 	}
 
 }
