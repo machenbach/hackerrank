@@ -1,19 +1,23 @@
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 public class Solution3 {
 
 	int maxEdges;
 	int nNodes;
 	
-	Map<Integer, List<Integer>> edges;
+	List<Integer>[] edges;
 	
-	Map<Integer, Integer> parent;
-	Map<Integer, List<Integer>> children;
+	int[] parent;
+	Set<Integer>[] children;
 	int root;
+	
+	Map<Integer, Set<Set<Integer>>> memsubtrees;
 	
 	public Solution3(int n, int k) {
 		nNodes = n;
@@ -21,30 +25,38 @@ public class Solution3 {
 	}
 	
 	void addLink (int p, int c) {
-		edges.putIfAbsent(p, new LinkedList<>());
-		edges.get(p).add(c);
-		edges.putIfAbsent(c, new LinkedList<>());
-		edges.get(c).add(p);
+		if (edges[p] == null) {
+			edges[p] = new LinkedList<>();
+		}
+		if (edges[c] == null) {
+			edges[c] = new LinkedList<>();
+		}
+		edges[p].add(c);
+		edges[c].add(p);
 	}
 	
 	long seen = 0;
 	
 	public void buildTree(int i) {
-		children.putIfAbsent(i, new ArrayList<>());
-		for (int c : edges.get(i)) {
+		if (children[i] == null) {
+			children[i] = new HashSet<>();
+		}
+		for (int c : edges[i]) {
 			if ((seen & 1l<<c) != 0) continue;
 			seen |= 1l<<c;
-			parent.put(c, i);
-			children.get(i).add(c);
+			parent[c] = i;
+			children[i].add(c);
 			buildTree(c);
 			
 		}
 	}
 	
+	@SuppressWarnings("unchecked")
 	public void init(Scanner in) {
-		edges = new HashMap<>();
-		parent = new HashMap<>();
-		children = new HashMap<>();
+		edges = (List<Integer>[]) new List[nNodes + 1];
+		parent = new int[nNodes + 1];
+		children = (Set<Integer>[]) new Set[nNodes + 1];
+		memsubtrees = new HashMap<>();
 		// build the tree
 		for (int i = 1; i < nNodes; i++) {
 			int p = in.nextInt();
@@ -56,71 +68,88 @@ public class Solution3 {
 		buildTree(root);
 	}
 	
-	
-	long solve() {
-		return 0;
-	}
-	
-	public void printTree(int r, String prefix) {
-		System.out.println(prefix + r);
-		for (int c : children.get(r)) {
-			printTree(c, prefix + "   ");
+	// return the powerset (set of all subsets) of s
+	public Set<Set<Integer>> powerset(Set<Integer> s) {
+		Set<Set<Integer>> r = new HashSet<>();
+		if (s.size() == 0) {
+			r.add(new HashSet<>());
+			return r;
 		}
-	}
-	
-	public void printTree() {
-		printTree(root, "");
-	}
-	
-	public long sumlist(List<Long> s) {
-		int n = s.size();
-		long tot = 0;
-		for (long l : s) {
-			tot+=l;
+		
+		for (int e : s) {
+			Set<Integer> sb = new HashSet<>(s);
+			sb.remove(e);
+			Set<Set<Integer>> csub = powerset(sb);
+			r.addAll(new HashSet<Set<Integer>>(csub));
+			Set<Integer> t = new HashSet<>();
+			t.add(e);
+			r.add(t);
+			for (Set<Integer> n : csub) {
+				Set<Integer> tn = new HashSet<>(n);
+				tn.add(e);
+				r.add(tn);
+			}
 		}
-		return tot * (1l << (n-1));
+		return r;
 	}
 	
-	public long sumlist2(List<Long> s, int max) {
-		if (max == 0 || s.size() < max) return 0l;
-		long tot = 0;
-		for (long l : s) {
-			List<Long> st = new ArrayList<>(s);
-			st.remove(l);
-			tot += (l + sumlist2(st, max-1));
+	public Set<Set<Integer>> subtrees(Set<Integer> s) {
+		Set<Set<Integer>> res = new HashSet<>();
+		for (int c : s) {
+			res.addAll(subtrees(c));
 		}
-		return tot;
+		return res;
 	}
 	
-	public long subcount(int r, int d) {
-		List<Long> l = new ArrayList<>();
-		for (int c : children.get(r)) {
-			l.add(subcount(c, d+1));
+	
+	public boolean containsAny(Set<Integer> s1, Set<Integer> s2) {
+		for (int i : s2) {
+			if (s1.contains(i)) return true;
 		}
-		return sumlist(l) + 1;
+		return false;
 	}
 	
-	public long subcount() {
-		return subcount(root, 1);
+	public Set<Integer> uniontrees(Set<Integer> s) {
+		Set<Integer> res = new HashSet<>();
+		for (Set<Integer> e : subtrees(s)) {
+			res.addAll(e);
+		}
+		return res;
+	}
+	public Set<Set<Integer>> subtrees(int r) {
+		if (memsubtrees.containsKey(r)) {
+			return memsubtrees.get(r);
+		}
+		
+		Set<Set<Integer>> res = new HashSet<>();
+		Set<Set<Integer>> ps = powerset(children[r]);
+		System.out.println(">" + r + " " + ps);
+		for(Set<Integer> cs : ps) {
+			Set<Set<Integer>> st = subtrees(cs);
+			res.addAll(st);
+			Set<Integer> u = uniontrees(cs);
+			u.add(r);
+			res.add(u);
+			u = new HashSet<>(cs);
+			cs.add(r);
+			res.add(cs);
+			for (Set<Integer> cst : st) {
+				if (containsAny(cst, children[r])) {
+					Set<Integer> ts = uniontrees(cst);
+					ts.add(r);
+					res.add(ts);
+				}
+			}
+		}
+		
+		res.add(Collections.singleton(r));
+		memsubtrees.put(r, res);
+		System.out.println("<" + r + " " + res);
+		return res;
 	}
 	
-	public long cutcount(int r) {
-		List<Long> l = new ArrayList<>();
-		for (int c : children.get(r)) {
-			l.add(cutcount(c));
-		}
-		long tot = 0;
-		for (int i = 1; i <= maxEdges; i++) {
-			tot += sumlist2(l, i);
-		}
-		if (children.get(r).size() + 1 <= maxEdges) {
-			tot++;
-		}
-		return tot;
-	}
-	
-	public long cutcount() {
-		return cutcount(root) + 2;
+	public Set<Set<Integer>> subtrees() {
+		return subtrees(root);
 	}
 
 	public static void main(String[] args) {
@@ -131,7 +160,10 @@ public class Solution3 {
 		Solution3 s = new Solution3(n, k);
 		s.init(in);
 		in.close();
-		System.out.println(s.subcount());
+		System.out.println("----");
+		for (Set<Integer> sc : s.subtrees()) {
+			System.out.println(sc);
+		}
 	}
 
 }
