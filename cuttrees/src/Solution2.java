@@ -104,7 +104,13 @@ public class Solution2 {
 			q.add(new Subtree(i));
 		}
 		
+		int i = 0;
 		while (!q.isEmpty()) {
+			i++;
+			if (i > 10000) {
+				System.out.println(seen.size());
+				i = 0;
+			}
 			Subtree s = q.poll();
 			seen.add(s);
 			// for each of the nodes in the subtree, and the next set of connections
@@ -123,6 +129,7 @@ public class Solution2 {
 	
 	long solve() {
 		Set<Subtree> sts = subTrees();
+		System.out.println("subtrees");
 		long tot = 0;
 		for (Subtree s : sts) {
 			if (linksOut(s) <= maxEdges) tot++;
