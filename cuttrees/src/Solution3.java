@@ -123,7 +123,7 @@ public class Solution3 {
 		
 		Set<Set<Integer>> res = new HashSet<>();
 		Set<Set<Integer>> ps = powerset(children[r]);
-		System.out.println(">" + r + " " + ps);
+		//System.out.println(">" + r + " " + ps);
 		for(Set<Integer> cs : ps) {
 			Set<Set<Integer>> st = subtrees(cs);
 			res.addAll(st);
@@ -144,7 +144,7 @@ public class Solution3 {
 		
 		res.add(Collections.singleton(r));
 		memsubtrees.put(r, res);
-		System.out.println("<" + r + " " + res);
+		//System.out.println("<" + r + " " + res);
 		return res;
 	}
 	

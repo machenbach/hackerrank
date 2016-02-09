@@ -139,7 +139,13 @@ public class Solution2 {
 		Solution2 s = new Solution2(n, k);
 		s.init(in);
 		in.close();
-		System.out.println(s.solve());
+		//System.out.println(s.solve());
+		Set<Subtree> sts = s.subTrees();
+		System.out.println(sts.size());
+		System.out.println("===");
+		for (Subtree st : sts) {
+			System.out.println(st.subtree);
+		}
 
 	}
 
