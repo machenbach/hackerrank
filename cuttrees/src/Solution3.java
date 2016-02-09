@@ -109,10 +109,10 @@ public class Solution3 {
 		return false;
 	}
 	
-	public Set<Integer> uniontrees(Set<Integer> s) {
-		Set<Integer> res = new HashSet<>();
-		for (Set<Integer> e : subtrees(s)) {
-			res.addAll(new HashSet<>(e));
+	public Set<Set<Integer>> uniontrees(Set<Integer> s) {
+		Set<Set<Integer>> res = new HashSet<>();
+		for (int r : s) {
+			res.addAll(subtrees(r));
 		}
 		return res;
 	}
@@ -130,23 +130,16 @@ public class Solution3 {
 			Set<Integer> t = new HashSet<>(cs);
 			t.add(r);
 			res.add(t);
-			t = new HashSet<>(cs);
-			res.add(t);
-			// now for each subset of the elements of cs, add r all the subtrees containing r
-			for (int c : cs) {
-				Set<Set<Integer>> st = subtrees(c);
-				for (Set<Integer> cst : st) {
-					res.add(new HashSet<>(cst));
-					if (cst.contains(c)) {
-						t = new HashSet<>(cst);
-						t.addAll(new HashSet<>(cs));
-						t.add(r);
-						res.add(t);
-						t = new HashSet<>(cst);
-						t.addAll(new HashSet<>(cs));
-						res.add(t);
-						//System.out.println(t);
-					}
+			// get the union of all subtrees for this set of nodes
+			Set<Set<Integer>> all = uniontrees(cs);
+			res.addAll(all);
+			for (Set<Integer> cst : all) {
+				if (containsAny(cst, cs)) {
+					t = new HashSet<>(cst);
+					t.addAll(new HashSet<>(cs));
+					t.add(r);
+					res.add(t);
+					//System.out.println(t);
 				}
 			}
 		}
