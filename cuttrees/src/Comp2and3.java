@@ -51,17 +51,20 @@ public class Comp2and3 {
 	}
 	
 	@Test
-	public void commonTrees() throws FileNotFoundException {
-		subtrees2.retainAll(subtrees3);
-		System.out.println(subtrees2.size());
-	}
-	
-	@Test
-	public void markdiff() throws FileNotFoundException {
+	public void diff23() throws FileNotFoundException {
+		System.out.println("2 - 3");
+		subtrees2.removeAll(subtrees3);
 		for (Set<Integer> s : subtrees2) {
-			System.out.print(s);
-			System.out.println(subtrees3.contains(s) ? "  <-- 3" : "");
+			System.out.println(s);
 		}
 	}
 
+	@Test
+	public void diff32() throws FileNotFoundException {
+		System.out.println("3 - 2");
+		subtrees3.removeAll(subtrees2);
+		for (Set<Integer> s : subtrees3) {
+			System.out.println(s);
+		}
+	}
 }

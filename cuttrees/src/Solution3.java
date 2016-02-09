@@ -112,10 +112,11 @@ public class Solution3 {
 	public Set<Integer> uniontrees(Set<Integer> s) {
 		Set<Integer> res = new HashSet<>();
 		for (Set<Integer> e : subtrees(s)) {
-			res.addAll(e);
+			res.addAll(new HashSet<>(e));
 		}
 		return res;
 	}
+	
 	public Set<Set<Integer>> subtrees(int r) {
 		if (memsubtrees.containsKey(r)) {
 			return memsubtrees.get(r);
@@ -125,25 +126,33 @@ public class Solution3 {
 		Set<Set<Integer>> ps = powerset(children[r]);
 		//System.out.println(">" + r + " " + ps);
 		for(Set<Integer> cs : ps) {
-			Set<Set<Integer>> st = subtrees(cs);
-			res.addAll(st);
-			Set<Integer> u = uniontrees(cs);
-			u.add(r);
-			res.add(u);
-			u = new HashSet<>(cs);
-			cs.add(r);
-			res.add(cs);
-			for (Set<Integer> cst : st) {
-				if (containsAny(cst, children[r])) {
-					Set<Integer> ts = uniontrees(cst);
-					ts.add(r);
-					res.add(ts);
+			// add the top level
+			Set<Integer> t = new HashSet<>(cs);
+			t.add(r);
+			res.add(t);
+			t = new HashSet<>(cs);
+			res.add(t);
+			// now for each subset of the elements of cs, add r all the subtrees containing r
+			for (int c : cs) {
+				Set<Set<Integer>> st = subtrees(c);
+				for (Set<Integer> cst : st) {
+					res.add(new HashSet<>(cst));
+					if (cst.contains(c)) {
+						t = new HashSet<>(cst);
+						t.addAll(new HashSet<>(cs));
+						t.add(r);
+						res.add(t);
+						t = new HashSet<>(cst);
+						t.addAll(new HashSet<>(cs));
+						res.add(t);
+						//System.out.println(t);
+					}
 				}
 			}
 		}
 		
 		res.add(Collections.singleton(r));
-		memsubtrees.put(r, res);
+		memsubtrees.put(r, new HashSet<>(res));
 		//System.out.println("<" + r + " " + res);
 		return res;
 	}
