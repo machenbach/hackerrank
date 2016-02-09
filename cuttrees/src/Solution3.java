@@ -133,6 +133,14 @@ public class Solution3 {
 			// get the union of all subtrees for this set of nodes
 			Set<Set<Integer>> all = uniontrees(cs);
 			res.addAll(all);
+			t = new HashSet<>(cs);
+			for (Set<Integer> cst : all) {
+				if (containsAny(cst,cs)) {
+					t.addAll(cst);
+				}
+			}
+			t.add(r);
+			res.add(t);
 			for (Set<Integer> cst : all) {
 				if (containsAny(cst, cs)) {
 					t = new HashSet<>(cst);
