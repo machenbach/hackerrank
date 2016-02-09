@@ -63,127 +63,85 @@ public class Solution {
 			);
 	}
 	
-	boolean[] riderAssign;
-	boolean[] bikeAssign;
-	int[] riderZeros;
-	int[] bikesZeros;
+	int[] rZeroCnt;
+	int[] bZeroCnt;
+	boolean[][] marked;
 	
 
-	int bikeZero(int r, long[][] m) {
+	List<Integer> bikeZeros(int r, long[][] m) {
+		List<Integer> l = new ArrayList<>();
 		for (int b =0; b < bikeN; b++) {
 			if (m[r][b] == 0) {
-				return b;
+				l.add(b);
 			}
 		}
-		return -1;
+		return l;
 	}
 
-	int riderZero(int b, long[][] m) {
+	List<Integer> riderZeros(int b, long[][] m) {
+		List<Integer> l = new ArrayList<>();
 		for (int r =0; r < riderN; r++) {
 			if (m[r][b] == 0) {
-				return r;
+				l.add(r);
 			}
 		}
-		return -1;
+		return l;
 	}
 	
 	List<Long> assign() {
 		// get a copy of the riderbike distances
-		riderAssign = new boolean[riderN];
-		bikeAssign = new boolean[bikeN];
 		int assignments = 0;
 		List<Long> assigned = new ArrayList<>();
 		
 		while (assignments < k) {
 			boolean progress;
-			riderZeros = new int[riderN];
-			bikesZeros = new int[bikeN];
+			rZeroCnt = new int[riderN];
+			bZeroCnt = new int[bikeN];
 			
 			// adjust the rows and columns
-			long[][] reduced = Arrays.stream(riderBikeDist).map(x -> x.clone()).toArray(long[][]::new);
-			for (int r = 0; r < riderN; r++) {
-				if (riderAssign[r]) continue;
-				// find the min for the rider
-				long m = Long.MAX_VALUE;
-				for (int b = 0; b < bikeN; b++) {
-					if (!bikeAssign[b]) m = Math.min(m, reduced[r][b]);
-				}
-				
-				for (int b = 0; b < bikeN; b++) {
-					if (bikeAssign[b]) continue;
-					// now adjust for the minimum.  If this is a new zero, record it
-					if (reduced[r][b] != 0 && reduced[r][b] == m) {
-						riderZeros[r]++;
-						bikesZeros[b]++;
-					}
-					reduced[r][b] -= m;
-				}
-			}
-
-			do {
-				progress = false;
-				for (int r = 0; r < riderN; r++) {
-					if (riderZeros[r] == 1  && !riderAssign[r]) {
-						int b = bikeZero(r, reduced);
-						if (b < 0 || bikeAssign[b]) continue;
-						// assign, and reduce the numbers of zero
-						assignments++;
-						riderAssign[r] = true;
-						bikeAssign[b] = true;
-						riderZeros[r]--;
-						bikesZeros[b]--;
-						assigned.add(riderBikeDist[r][b]);
-						progress = true;
-					}
-				}
-				
-				
-			} while(assignments < k && progress);
-
-			
-			reduced = Arrays.stream(riderBikeDist).map(x -> x.clone()).toArray(long[][]::new);
-			for (int b = 0; b < bikeN; b++) {
-				if (bikeAssign[b]) continue;
-				// find the min for the rider
-				long m = Long.MAX_VALUE;
-				for (int r = 0; r < riderN; r++) {
-					if (!riderAssign[r]) m = Math.min(m, reduced[r][b]);
-				}
-				
-				for (int r = 0; r < riderN; r++) {
-					if (riderAssign[r]) continue;
-					// now adjust for the minimum.  If this is a new zero, record it
-					if (reduced[r][b] != 0 && reduced[r][b] == m) {
-						riderZeros[r]++;
-						bikesZeros[b]++;
-					}
-					reduced[r][b] -= m;
-				}
-			}
-			
-			// scan through for bikes or riders with only one zero, make the assignment
-			
-			do {
-				progress = false;
-
-				for (int b = 0; b < bikeN; b++) {
-					if (bikesZeros[b] == 1 && !bikeAssign[b]) {
-						int r = riderZero(b, reduced);
-						if (r < 0 || riderAssign[r]) continue;
-						// assign, and reduce the numbers of zero
-						assignments++;
-						riderAssign[r] = true;
-						bikeAssign[b] = true;
-						riderZeros[r]--;
-						bikesZeros[b]--;
-						assigned.add(riderBikeDist[r][b]);
-						progress = true;
-					}
-				}
-				
-			} while(assignments < k && progress);
+			long[][] reduced = reduce();
 		}
+
 		return assigned;
+	}
+
+	private long[][] reduce() {
+		// copy the array
+		long[][] reduced = Arrays.stream(riderBikeDist).map(x -> x.clone()).toArray(long[][]::new);
+		for (int r = 0; r < riderN; r++) {
+			// find the min for the rider
+			long m = Long.MAX_VALUE;
+			for (int b = 0; b < bikeN; b++) {
+				Math.min(m, reduced[r][b]);
+			}
+			
+			for (int b = 0; b < bikeN; b++) {
+				// now adjust for the minimum.  If this is a new zero, record it
+				if (reduced[r][b] != 0 && reduced[r][b] == m) {
+					rZeroCnt[r]++;
+					bZeroCnt[b]++;
+				}
+				reduced[r][b] -= m;
+			}
+		}
+		
+		for (int b = 0; b < bikeN; b++) {
+			// find the min for the rider
+			long m = Long.MAX_VALUE;
+			for (int r = 0; r < riderN; r++) {
+				m = Math.min(m, reduced[r][b]);
+			}
+			
+			for (int r = 0; r < riderN; r++) {
+				// now adjust for the minimum.  If this is a new zero, record it
+				if (reduced[r][b] != 0 && reduced[r][b] == m) {
+					rZeroCnt[r]++;
+					bZeroCnt[b]++;
+				}
+				reduced[r][b] -= m;
+			}
+		}
+		return reduced;
 	}
 	
 	public long solve() {
