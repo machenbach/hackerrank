@@ -38,9 +38,6 @@ public class Comp2and3 {
 	
 	Set<Set<Integer>> cst(Set<Subtree> sts) {
 		Set<Set<Integer>> res = new HashSet<>();
-		for (Subtree st : sts) {
-			res.add(new HashSet<>(st.subtree));
-		}
 		return res;
 	}
 

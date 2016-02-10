@@ -1,6 +1,6 @@
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -8,23 +8,23 @@ import java.util.Queue;
 import java.util.Scanner;
 import java.util.Set;
 
-class Subtree {
-	public Set<Integer> subtree;
+class Subtree implements Iterable<Integer>{
+	long subtree;
 	
 	public Subtree(int i) {
-		subtree = Collections.singleton(i);
+		subtree = 1l << i;
 	}
 	
 	public Subtree(int i, Subtree st) {
-		subtree = new HashSet<>(st.subtree);
-		subtree.add(i);
+		subtree = st.subtree;
+		subtree |= 1L << i;
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((subtree == null) ? 0 : subtree.hashCode());
+		result = prime * result + (int) (subtree ^ (subtree >>> 32));
 		return result;
 	}
 
@@ -37,19 +37,36 @@ class Subtree {
 		if (getClass() != obj.getClass())
 			return false;
 		Subtree other = (Subtree) obj;
-		if (subtree == null) {
-			if (other.subtree != null)
-				return false;
-		} else if (!subtree.equals(other.subtree))
+		if (subtree != other.subtree)
 			return false;
 		return true;
 	}
 
 	@Override
-	public String toString() {
-		return subtree.toString();
+	public Iterator<Integer> iterator() {
+		return new Iterator<Integer>() {
+			long bits = subtree;
+			int pos = 0;
+			long bm = 1l;
+			int max = 63 - Long.numberOfLeadingZeros(bits);
+
+			@Override
+			public boolean hasNext() {
+				return pos < max;
+			}
+
+			@Override
+			public Integer next() {
+				while (pos < max) {
+					pos++;
+					bm <<= 1L;
+					if ((bits & bm) != 0) return pos;
+				}
+				return pos;
+			}
+		};
 	}
-	
+
 	
 }
 
@@ -86,7 +103,7 @@ public class Solution2 {
 	int linksOut(Subtree s) {
 		Set<Integer> inLinks = new HashSet<>();
 		Set<Integer> outLinks = new HashSet<>();
-		for (int n : s.subtree) {
+		for (int n : s) {
 			inLinks.add(n);
 			for (int o : edges.get(n)) {
 				outLinks.add(o);
@@ -104,17 +121,11 @@ public class Solution2 {
 			q.add(new Subtree(i));
 		}
 		
-		int i = 0;
 		while (!q.isEmpty()) {
-			i++;
-			if (i > 10000) {
-				System.out.println(seen.size());
-				i = 0;
-			}
 			Subtree s = q.poll();
 			seen.add(s);
 			// for each of the nodes in the subtree, and the next set of connections
-			for (int n : s.subtree) {
+			for (int n : s) {
 				for (int c : edges.get(n)) {
 					Subtree st = new Subtree(c, s);
 					if (!seen.contains(st)) {
@@ -129,7 +140,7 @@ public class Solution2 {
 	
 	long solve() {
 		Set<Subtree> sts = subTrees();
-		System.out.println("subtrees");
+		//System.out.println("subtrees");
 		long tot = 0;
 		for (Subtree s : sts) {
 			if (linksOut(s) <= maxEdges) tot++;
@@ -146,13 +157,13 @@ public class Solution2 {
 		Solution2 s = new Solution2(n, k);
 		s.init(in);
 		in.close();
-		//System.out.println(s.solve());
-		Set<Subtree> sts = s.subTrees();
-		System.out.println(sts.size());
-		System.out.println("===");
-		for (Subtree st : sts) {
-			System.out.println(st.subtree);
-		}
+		System.out.println(s.solve());
+		//Set<Subtree> sts = s.subTrees();
+		//System.out.println(sts.size());
+		//System.out.println("===");
+		//for (Subtree st : sts) {
+		//	System.out.println(st.subtree);
+		//}
 
 	}
 

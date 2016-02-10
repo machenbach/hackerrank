@@ -22,6 +22,11 @@ public class Solution2Test {
 		Solution2.main(null);
 	}
 	@Test
+	public void testh2() throws FileNotFoundException {
+		System.setIn(new FileInputStream("testh2.txt"));
+		Solution2.main(null);
+	}
+	@Test
 	public void test3() throws FileNotFoundException {
 		System.setIn(new FileInputStream("test3.txt"));
 		Solution2.main(null);
