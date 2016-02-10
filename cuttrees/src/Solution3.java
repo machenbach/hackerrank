@@ -124,16 +124,11 @@ public class Solution3 {
 		
 		Set<Set<Integer>> res = new HashSet<>();
 		Set<Set<Integer>> ps = powerset(children[r]);
-		//System.out.println(">" + r + " " + ps);
 		for(Set<Integer> cs : ps) {
-			// add the top level
-			Set<Integer> t = new HashSet<>(cs);
-			t.add(r);
-			res.add(t);
 			// get the union of all subtrees for this set of nodes
 			Set<Set<Integer>> all = uniontrees(cs);
 			res.addAll(all);
-			t = new HashSet<>(cs);
+			Set<Integer> t = new HashSet<>();
 			for (Set<Integer> cst : all) {
 				if (containsAny(cst,cs)) {
 					t.addAll(cst);
@@ -147,14 +142,12 @@ public class Solution3 {
 					t.addAll(new HashSet<>(cs));
 					t.add(r);
 					res.add(t);
-					//System.out.println(t);
 				}
 			}
 		}
 		
 		res.add(Collections.singleton(r));
 		memsubtrees.put(r, new HashSet<>(res));
-		//System.out.println("<" + r + " " + res);
 		return res;
 	}
 	
@@ -162,6 +155,27 @@ public class Solution3 {
 		return subtrees(root);
 	}
 
+	int linksOut(Set<Integer> s) {
+		Set<Integer> inLinks = new HashSet<>();
+		Set<Integer> outLinks = new HashSet<>();
+		for (int n : s) {
+			inLinks.add(n);
+			for (int o : edges[n]) {
+				outLinks.add(o);
+			}
+		}
+		outLinks.removeAll(inLinks);
+		return outLinks.size();
+	}
+	
+	public long solve() {
+		long res = 0;
+		for (Set<Integer> s : subtrees()) {
+			if (linksOut(s) <= maxEdges) res++;
+		}
+		return res + 1;
+	}
+	
 	public static void main(String[] args) {
 		Scanner in = new Scanner(System.in);
 		int n = in.nextInt();
@@ -170,10 +184,7 @@ public class Solution3 {
 		Solution3 s = new Solution3(n, k);
 		s.init(in);
 		in.close();
-		System.out.println("----");
-		for (Set<Integer> sc : s.subtrees()) {
-			System.out.println(sc);
-		}
+		System.out.println(s.solve());
 	}
 
 }
