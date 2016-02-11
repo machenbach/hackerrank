@@ -1,8 +1,8 @@
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
 import java.util.Scanner;
 import java.util.Set;
 
@@ -133,7 +133,7 @@ public class Solution2 {
 	}
 
 	public long subTrees() {
-		Queue<Tree.Subtree> q = new LinkedList<>();
+		Deque<Tree.Subtree> q = new LinkedList<>();
 		Set<Tree.Subtree> seen = new HashSet<>();
 		long res = 0;
 		
@@ -153,7 +153,7 @@ public class Solution2 {
 					Tree.Subtree st = tree.subtree(c, s);
 					if (!seen.contains(st)) {
 						seen.add(st);
-						q.add(st);
+						q.push(st);
 					}
 				}
 			}
