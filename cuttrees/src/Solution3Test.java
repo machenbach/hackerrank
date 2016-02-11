@@ -1,8 +1,5 @@
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -38,6 +35,11 @@ public class Solution3Test {
 	@Test
 	public void test4() throws FileNotFoundException {
 		System.setIn(new FileInputStream("test4.txt"));
+		Solution3.main(null);
+	}
+	@Test
+	public void testh6() throws FileNotFoundException {
+		System.setIn(new FileInputStream("testh6.txt"));
 		Solution3.main(null);
 	}
 
