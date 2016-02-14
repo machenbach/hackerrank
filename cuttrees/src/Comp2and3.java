@@ -30,13 +30,13 @@ public class Comp2and3 {
 		s3.init(s3in);
 		s3in.close();
 		
-		subtrees2 = cst(s2.subTrees());
+		subtrees2 = null;
 		subtrees3 = s3.subtrees();
 		
 	}
 	
 	
-	Set<Set<Integer>> cst(Set<Subtree> sts) {
+	Set<Set<Integer>> cst(Set<Tree.Subtree> sts) {
 		Set<Set<Integer>> res = new HashSet<>();
 		return res;
 	}
