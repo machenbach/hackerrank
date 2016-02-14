@@ -1,10 +1,10 @@
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Scanner;
 import java.util.Set;
 
@@ -114,7 +114,7 @@ public class Solution2 {
 	}
 	
 	public Set<Subtree> subTrees() {
-		Queue<Subtree> q = new LinkedList<>();
+		Deque<Subtree> q = new LinkedList<>();
 		Set<Subtree> seen = new HashSet<>();
 		
 		for (int i = 1; i <= nNodes; i++) {
@@ -130,7 +130,7 @@ public class Solution2 {
 					Subtree st = new Subtree(c, s);
 					if (!seen.contains(st)) {
 						seen.add(st);
-						q.add(st);
+						q.push(st);
 					}
 				}
 			}
