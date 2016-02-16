@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
-public class Solution3 {
+public class Solution4 {
 
 	int maxEdges;
 	int nNodes;
@@ -19,7 +19,7 @@ public class Solution3 {
 	
 	Map<Integer, Set<Set<Integer>>> memsubtrees;
 	
-	public Solution3(int n, int k) {
+	public Solution4(int n, int k) {
 		nNodes = n;
 		maxEdges = k;
 	}
@@ -117,6 +117,24 @@ public class Solution3 {
 		return res;
 	}
 	
+	public long treeCount(int r) {
+		long res = 1;
+		int n = children[r].size();
+		if (n == 0) {
+			return res;
+		}
+		res += 1L << n;
+		for (Set<Integer> st : powerset(children[r])) {
+			for (int c : st) {
+				res += treeCount(c);
+			}
+		}
+		return res;
+	}
+	
+	public long treeCount() {
+		return treeCount(root);
+	}
 	public Set<Set<Integer>> subtrees(int r) {
 		if (memsubtrees.containsKey(r)) {
 			return memsubtrees.get(r);
@@ -183,10 +201,10 @@ public class Solution3 {
 		int n = in.nextInt();
 		int k = in.nextInt();
 		
-		Solution3 s = new Solution3(n, k);
+		Solution4 s = new Solution4(n, k);
 		s.init(in);
 		in.close();
-		System.out.println(s.solve());
+		System.out.println(s.treeCount());
 	}
 
 }

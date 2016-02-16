@@ -132,9 +132,11 @@ public class Solution2 {
 		tree = new Tree(nNodes, edges);
 	}
 
+	Set<Tree.Subtree> seen;
+	
 	public long subTrees() {
 		Deque<Tree.Subtree> q = new LinkedList<>();
-		Set<Tree.Subtree> seen = new HashSet<>();
+		seen = new HashSet<>();
 		long res = 0;
 		
 		for (int i = 1; i <= nNodes; i++) {
@@ -163,6 +165,11 @@ public class Solution2 {
 	
 	long solve() {
 		return subTrees();
+	}
+	
+	public long count() {
+		subTrees();
+		return seen.size();
 	}
 
 	public static void main(String[] args) {
