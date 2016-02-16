@@ -1,4 +1,3 @@
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -17,7 +16,8 @@ public class Solution4 {
 	Set<Integer>[] children;
 	int root;
 	
-	Map<Integer, Set<Set<Integer>>> memsubtrees;
+	Map<Integer, Long> aMap;
+	Map<Integer, Long> bMap;
 	
 	public Solution4(int n, int k) {
 		nNodes = n;
@@ -56,7 +56,8 @@ public class Solution4 {
 		edges = (List<Integer>[]) new List[nNodes + 1];
 		parent = new int[nNodes + 1];
 		children = (Set<Integer>[]) new Set[nNodes + 1];
-		memsubtrees = new HashMap<>();
+		aMap = new HashMap<>();
+		bMap = new HashMap<>();
 		// build the tree
 		for (int i = 1; i < nNodes; i++) {
 			int p = in.nextInt();
@@ -68,133 +69,65 @@ public class Solution4 {
 		buildTree(root);
 	}
 	
-	// return the powerset (set of all subsets) of s
-	public Set<Set<Integer>> powerset(Set<Integer> s) {
-		Set<Set<Integer>> r = new HashSet<>();
-		if (s.size() == 0) {
-			r.add(new HashSet<>());
-			return r;
-		}
-		
-		for (int e : s) {
-			Set<Integer> sb = new HashSet<>(s);
-			sb.remove(e);
-			Set<Set<Integer>> csub = powerset(sb);
-			r.addAll(new HashSet<Set<Integer>>(csub));
-			Set<Integer> t = new HashSet<>();
-			t.add(e);
-			r.add(t);
-			for (Set<Integer> n : csub) {
-				Set<Integer> tn = new HashSet<>(n);
-				tn.add(e);
-				r.add(tn);
-			}
-		}
-		return r;
-	}
-	
-	public Set<Set<Integer>> subtrees(Set<Integer> s) {
+	Set<Set<Integer>> combo(Set<Integer> s, int k) {
 		Set<Set<Integer>> res = new HashSet<>();
-		for (int c : s) {
-			res.addAll(subtrees(c));
-		}
-		return res;
-	}
-	
-	
-	public boolean containsAny(Set<Integer> s1, Set<Integer> s2) {
-		for (int i : s2) {
-			if (s1.contains(i)) return true;
-		}
-		return false;
-	}
-	
-	public Set<Set<Integer>> uniontrees(Set<Integer> s) {
-		Set<Set<Integer>> res = new HashSet<>();
-		for (int r : s) {
-			res.addAll(subtrees(r));
-		}
-		return res;
-	}
-	
-	public long treeCount(int r) {
-		long res = 1;
-		int n = children[r].size();
-		if (n == 0) {
+		if (k == 0) {
+			res.add(new HashSet<>());
 			return res;
 		}
-		res += 1L << n;
-		for (Set<Integer> st : powerset(children[r])) {
-			for (int c : st) {
-				res += treeCount(c);
+		for (int e : s) {
+			Set<Integer> c = new HashSet<>(s);
+			c.remove(e);
+			for (Set<Integer> sc : combo(c, k - 1)) {
+				sc.add(e);
+				res.add(sc);
 			}
 		}
 		return res;
-	}
-	
-	public long treeCount() {
-		return treeCount(root);
-	}
-	public Set<Set<Integer>> subtrees(int r) {
-		if (memsubtrees.containsKey(r)) {
-			return memsubtrees.get(r);
-		}
-		
-		Set<Set<Integer>> res = new HashSet<>();
-		Set<Set<Integer>> ps = powerset(children[r]);
-		
-		
-		for(Set<Integer> cs : ps) {
-			// get the union of all subtrees for this set of nodes
-			Set<Set<Integer>> all = uniontrees(cs);
-			res.addAll(all);
-			Set<Integer> t = new HashSet<>();
-			for (Set<Integer> cst : all) {
-				if (containsAny(cst,cs)) {
-					t.addAll(cst);
-				}
-			}
-			t.add(r);
-			res.add(t);
-			for (Set<Integer> cst : all) {
-				if (containsAny(cst, cs)) {
-					t = new HashSet<>(cst);
-					t.addAll(new HashSet<>(cs));
-					t.add(r);
-					res.add(t);
-				}
-			}
-		}
-		
-		res.add(Collections.singleton(r));
-		memsubtrees.put(r, new HashSet<>(res));
-		return res;
-	}
-	
-	public Set<Set<Integer>> subtrees() {
-		return subtrees(root);
 	}
 
-	int linksOut(Set<Integer> s) {
-		Set<Integer> inLinks = new HashSet<>();
-		Set<Integer> outLinks = new HashSet<>();
-		for (int n : s) {
-			inLinks.add(n);
-			for (int o : edges[n]) {
-				outLinks.add(o);
-			}
+	public long A(int r) {
+		if (children[r].size() == 0) {
+			return 1l;
 		}
-		outLinks.removeAll(inLinks);
-		return outLinks.size();
+		if (aMap.containsKey(r)) {
+			return aMap.get(r);
+		}
+		long tot = 0;
+		for (int i = 1; i <= maxEdges -1; i++) {
+		Set<Set<Integer>> cmb = combo(children[r], i);
+			long res = 1l;
+			for (Set<Integer> cs : cmb) {
+				for (int c : cs) {
+					res *= (A(c) + 1L);
+				}
+			}
+			tot += res;
+		}
+		aMap.put(r, tot);
+		return tot;
 	}
 	
-	public long solve() {
-		long res = 0;
-		for (Set<Integer> s : subtrees()) {
-			if (linksOut(s) <= maxEdges) res++;
+	public long B(int r) {
+		if (children[r].size() == 0) {
+			return 0l;
 		}
-		return res + 1;
+		if (bMap.containsKey(r)) {
+			return bMap.get(r);
+		}
+		long res = 0;
+		for (int c : children[r]) {
+			res += (A(c) + B(c));
+		}
+		bMap.put(r, res);
+		return res;
 	}
+	
+	
+	public long treeCount() {
+		return A(root) + B(root);
+	}
+
 	
 	public static void main(String[] args) {
 		Scanner in = new Scanner(System.in);

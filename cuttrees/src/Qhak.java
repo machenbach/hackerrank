@@ -2,42 +2,30 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class Qhak {
-	public static Set<Set<Integer>> powerset(Set<Integer> s) {
-		Set<Set<Integer>> r = new HashSet<>();
+	static Set<Set<Integer>> combo(Set<Integer> s, int k) {
+		Set<Set<Integer>> res = new HashSet<>();
+		if (k == 0) {
+			res.add(new HashSet<>());
+			return res;
+		}
 		for (int e : s) {
-			Set<Integer> sb = new HashSet<>(s);
-			sb.remove(e);
-			Set<Set<Integer>> csub = powerset(sb);
-			r.addAll(new HashSet<Set<Integer>>(csub));
-			Set<Integer> t = new HashSet<>();
-			t.add(e);
-			r.add(t);
-			for (Set<Integer> n : csub) {
-				Set<Integer> tn = new HashSet<>(n);
-				tn.add(e);
-				r.add(tn);
+			Set<Integer> c = new HashSet<>(s);
+			c.remove(e);
+			for (Set<Integer> sc : combo(c, k - 1)) {
+				sc.add(e);
+				res.add(sc);
 			}
 		}
-		return r;
+		return res;
 	}
-	
-	public static long total(Set<Set<Integer>> s) {
-		long tot = 0;
-		for (Set<Integer> c : s) {
-			for (int i : c) {
-				tot+= i;
-			}
-		}
-		return tot;
-	}
-
 	public static void main(String[] args) {
-		Set<Integer> s= new HashSet<>();
-		long tot = 0;
-		for (int i = 1; i <= 10; i++) {
+		Set<Integer> s = new HashSet<>();
+		for (int i = 0; i< 10; i++) {
 			s.add(i);
-			tot += i;
-			System.out.println(total(powerset(s)) + " " + (tot * 1l<<(i-1)));
+		}
+		
+		for (int i = 0; i < 3; i++) {
+			System.out.println(combo(s,i));
 		}
 	}
 
