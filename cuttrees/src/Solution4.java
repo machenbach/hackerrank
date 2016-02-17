@@ -93,19 +93,12 @@ public class Solution4 {
 		if (aMap.containsKey(r)) {
 			return aMap.get(r);
 		}
-		long tot = 0;
-		for (int i = 1; i <= maxEdges -1; i++) {
-		Set<Set<Integer>> cmb = combo(children[r], i);
-			long res = 1l;
-			for (Set<Integer> cs : cmb) {
-				for (int c : cs) {
-					res *= (A(c) + 1L);
-				}
-			}
-			tot += res;
+		long res = 1l;
+		for (int c : children[r]) {
+			res *= (A(c) + 1L);
 		}
-		aMap.put(r, tot);
-		return tot;
+		aMap.put(r, res);
+		return res;
 	}
 	
 	public long B(int r) {
