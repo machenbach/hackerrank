@@ -9,32 +9,12 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Scanner;
 
-class Edge {
-	public int from;
-	public int to;
-	public int w;
-	
-	public Edge(int from, int to, int w) {
-		this.from = from;
-		this.to = to;
-		this.w = w;
-	}
-	
-	@Override
-	public String toString() {
-		return String.format("%s -> %s: %s", from, to, w);
-	}
-	
-}
-
-
-public class Solution {
+public class Solution2 {
 	int n, m, k;
 	byte[][] map;
 	
 	List<Edge>[] e;
-	int[] distTo;
-	int[] pathTo;
+	int[][] distTo;
 	boolean[] seen;
 	int star;
 	int[] pred;
@@ -78,11 +58,9 @@ public class Solution {
 		map = new byte[n][m];
 		e = new List[n * m];
 		seen = new boolean[n * m];
-		distTo = new int[n * m];
-		pathTo = new int[n * m];
+		distTo = new int[n * m][n*m];
 		pred = new int[n * m];
 		Arrays.fill(distTo, Integer.MAX_VALUE);
-		Arrays.fill(pathTo, Integer.MAX_VALUE);
 		
 		for (int i = 0; i < n; i++) {
 			map[i] = br.readLine().trim().getBytes();
@@ -99,29 +77,13 @@ public class Solution {
 	}
 	
 	public int solve() {
-		Queue<Edge> q = new LinkedList<>();
-		q.addAll(e[0]);
-		distTo[0] = 0;
-		pathTo[0] = 0;
-		pred[0] = -1;
-		while (! q.isEmpty()) {
-			Edge edge = q.poll();
-			if (distTo[edge.to] > distTo[edge.from] + edge.w) {
-				distTo[edge.to] = distTo[edge.from] + edge.w;
-				pathTo[edge.to] = pathTo[edge.from] + 1;
-				pred[edge.to] = edge.from;
-			}
-			if (pathTo[edge.to] > k) {
-				distTo[edge.to] = Integer.MAX_VALUE;
-			}
-			if (!seen[edge.to]) {
-				seen[edge.to] = true;
-				q.addAll(e[edge.to]);
+		for (int i = 0; i < m*n; i++) {
+			distTo[i][i] = 0;
+			for (Edge edge : e[i]) {
+				distTo[edge.to][edge.from] = edge.w;
 			}
 		}
-		if (distTo[star] < Integer.MAX_VALUE) {
-			return distTo[star];
-		}
+		
 		return -1;
 	}
 	
@@ -140,11 +102,10 @@ public class Solution {
 			map[i][j] = '.';
 		}
 		printMap();
-		System.out.println(String.format("dist = %s, path = %s", distTo[star], pathTo[star]));
 	}
 
 	public static void main(String[] args) {
-		Solution s = new Solution();
+		Solution2 s = new Solution2();
 		try {
 			s.init();
 			System.out.println(s.solve());
