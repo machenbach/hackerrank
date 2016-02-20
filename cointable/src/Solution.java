@@ -64,6 +64,29 @@ public class Solution {
 		
 	}
 	
+	byte fromTo(int n1, int n2) {
+		int diff = n2 - n2;
+		if (diff == 1) return 'R';
+		else if (diff == -1) return 'L';
+		else if (diff == m) return 'D';
+		else return 'U';
+	}
+	
+	int countPath() {
+		List<Integer> path = path();
+		int from = -1;
+		int tot = 0;
+		for (int to : path) {
+			if (from != -1) {
+				if (fromTo(from, to) != map[from/m][from%m]) {
+					tot++;
+				}
+			}
+			from = to;
+		}
+		return tot;
+	}
+	
 	
 	@SuppressWarnings("unchecked")
 	public void init () throws IOException {
@@ -98,6 +121,16 @@ public class Solution {
 		}
 	}
 	
+	List<Integer> path() {
+		List<Integer> path = new LinkedList<>();
+		int node = star;
+		while (node >= 0) {
+			path.add(0, node);
+			node = pred[node];
+		}
+		return path;
+	}
+	
 	public int solve() {
 		Queue<Edge> q = new LinkedList<>();
 		q.addAll(e[0]);
@@ -125,21 +158,32 @@ public class Solution {
 		return -1;
 	}
 	
-	public void printMap() {
+	public void printMap(byte[][] map) {
 		for (int i = 0; i < n; i++) {
 			System.out.println(new String(map[i]));
 		}
 	}
+	public void printMap() {
+		printMap(map);
+	}
 	
 	public void printSolution() {
+		System.out.println(countPath());
+		byte[][] pathmap = new byte[n][m];
+		for (int i = 0; i < n; i++) {
+			for (int j = 0; j < m; j++) {
+				pathmap[i][j] = ' ';
+			}
+		}
 		int node = star;
 		while (node > 0) {
 			node = pred[node];
 			int i = node/m;
 			int j = node % m;
-			map[i][j] = '.';
+			pathmap[i][j] = map[i][j];
 		}
-		printMap();
+		printMap(pathmap);
+		System.out.println(path());
 		System.out.println(String.format("dist = %s, path = %s", distTo[star], pathTo[star]));
 	}
 
