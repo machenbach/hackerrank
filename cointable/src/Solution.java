@@ -3,11 +3,9 @@
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.PriorityQueue;
-import java.util.Queue;
 import java.util.Scanner;
 
 class Node implements Comparable<Node>{
@@ -86,29 +84,6 @@ public class Solution {
 		return i*m + j;
 	}
 	
-	byte fromTo(int n1, int n2) {
-		int diff = n2 - n1;
-		if (diff == 1) return 'R';
-		else if (diff == -1) return 'L';
-		else if (diff == m) return 'D';
-		else return 'U';
-	}
-	
-	int countPath() {
-		List<Integer> path = path();
-		int from = -1;
-		int tot = 0;
-		for (int to : path) {
-			if (from != -1) {
-				if (fromTo(from, to) != map[from/m][from%m]) {
-					tot++;
-				}
-			}
-			from = to;
-		}
-		return tot;
-	}
-	
 	
 	public void init () throws IOException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
@@ -137,15 +112,6 @@ public class Solution {
 		}
 	}
 	
-	List<Integer> path() {
-		List<Integer> path = new LinkedList<>();
-		Node node = star;
-		while (node != null) {
-			path.add(0, node.node);
-			node = node.pred;
-		}
-		return path;
-	}
 	
 	public int solve() {
 		PriorityQueue<Node> q = new PriorityQueue<>();
@@ -157,10 +123,12 @@ public class Solution {
 		
 		while (!q.isEmpty()) {
 			Node p = q.remove();
+			if (p.dist == Integer.MAX_VALUE) continue;
 			for (Edge ce : p.edges) {
 				Node c = ce.to;
 				if (c.dist > p.dist + ce.w) {
 					c.path = p.path + 1;
+					c.pred = p;
 					if (c.path > k) {
 						c.dist = Integer.MAX_VALUE;
 					}
@@ -184,43 +152,12 @@ public class Solution {
 		return -1;
 	}
 	
-	public void printMap(byte[][] map) {
-		for (int i = 0; i < n; i++) {
-			System.out.println(new String(map[i]));
-		}
-	}
-	public void printMap() {
-		printMap(map);
-	}
-	
-	public void printSolution() {
-		System.out.println(countPath());
-		byte[][] pathmap = new byte[n][m];
-		for (int i = 0; i < n; i++) {
-			for (int j = 0; j < m; j++) {
-				pathmap[i][j] = ' ';
-			}
-		}
-		Node node = star;
-		while (node != null) {
-			int i = node.node/m;
-			int j = node.node % m;
-			pathmap[i][j] = map[i][j];
-			node = node.pred;
-		}
-		printMap(pathmap);
-		System.out.println(path());
-		System.out.println(String.format("dist = %s, path = %s", star.dist, star.path));
-	}
 
 	public static void main(String[] args) {
 		Solution s = new Solution();
 		try {
 			s.init();
 			System.out.println(s.solve());
-			s.printMap();
-			System.out.println();
-			s.printSolution();
 		} catch (IOException e) {
 			System.out.println(-1);
 		}
