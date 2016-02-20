@@ -6,23 +6,46 @@ import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Scanner;
 
+class Node implements Comparable<Node>{
+	public int node;
+	public List<Edge> edges;
+	public int dist;
+	public int path;
+	public boolean seen;
+	public Node pred;
+	
+	public Node (int node) {
+		this.node = node;
+		edges = new LinkedList<>();
+		dist = Integer.MAX_VALUE;
+		path = 0;
+	}
+	@Override
+	public int compareTo(Node o) {
+		return Integer.compare(dist, o.dist);
+	}
+	@Override
+	public String toString() {
+		return Integer.toString(node);
+	}
+}
+
 class Edge {
-	public int from;
-	public int to;
+	public Node to;
 	public int w;
 	
-	public Edge(int from, int to, int w) {
-		this.from = from;
+	public Edge(Node to, int w) {
 		this.to = to;
 		this.w = w;
 	}
 	
 	@Override
 	public String toString() {
-		return String.format("%s -> %s: %s", from, to, w);
+		return String.format("%s: %s", to, w);
 	}
 	
 }
@@ -32,36 +55,35 @@ public class Solution {
 	int n, m, k;
 	byte[][] map;
 	
-	List<Edge>[] e;
-	int[] distTo;
-	int[] pathTo;
-	boolean[] seen;
-	int star;
-	int[] pred;
+	Node star;
+	Node[] nodes;
 	
-	int node(int i, int j) {
-		return i * m +j;
-	}
-	
-	void addEdges(int i, int j, byte b) {
-		int node = node(i, j);
+	void addEdges(Node node, byte b) {
+		int i = node.node / m;
+		int j = node.node % m;
+		
 		if (b == '*') {
 			star = node;
 			return;
 		}
+		
 		if (i > 0) {
-			e[node].add(new Edge(node, node - m, b=='U' ? 0 : 1));
+			node.edges.add(new Edge(nodes[node.node - m], b=='U' ? 0 : 1));
 		}
 		if (i < n-1) {
-			e[node].add(new Edge(node, node + m, b=='D' ? 0 : 1));
+			node.edges.add(new Edge(nodes[node.node + m], b=='D' ? 0 : 1));
 		}
 		if (j > 0) {
-			e[node].add(new Edge(node, node - 1, b=='L' ? 0 : 1));
+			node.edges.add(new Edge(nodes[node.node - 1], b=='L' ? 0 : 1));
 		}
 		if (j < m - 1)  {
-			e[node].add(new Edge(node, node + 1, b=='R' ? 0 : 1));
+			node.edges.add(new Edge(nodes[node.node + 1], b=='R' ? 0 : 1));
 		}
 		
+	}
+	
+	int node(int i, int j) {
+		return i*m + j;
 	}
 	
 	byte fromTo(int n1, int n2) {
@@ -88,7 +110,6 @@ public class Solution {
 	}
 	
 	
-	@SuppressWarnings("unchecked")
 	public void init () throws IOException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 		Scanner in = new Scanner(br.readLine());
@@ -96,64 +117,69 @@ public class Solution {
 		m = in.nextInt();
 		k = in.nextInt();
 		in.close();
-		// create the various arrays
-		
+		// read the map
 		map = new byte[n][m];
-		e = new List[n * m];
-		seen = new boolean[n * m];
-		distTo = new int[n * m];
-		pathTo = new int[n * m];
-		pred = new int[n * m];
-		Arrays.fill(distTo, Integer.MAX_VALUE);
-		Arrays.fill(pathTo, Integer.MAX_VALUE);
-		
 		for (int i = 0; i < n; i++) {
 			map[i] = br.readLine().trim().getBytes();
 		}
 		
-		// create
+		// create the nodes
+		nodes = new Node[n*m];
+		for (int i = 0; i < n*m; i++) {
+			nodes[i] = new Node(i);
+		}
+		
+		// Add the edges
 		for (int i = 0; i < n; i++) {
 			for (int j = 0; j < m; j++) {
-				int node = node(i, j);
-				e[node] = new LinkedList<>();
-				addEdges(i, j, map[i][j]);
+				addEdges(nodes[node(i, j)], map[i][j]);
 			}
 		}
 	}
 	
 	List<Integer> path() {
 		List<Integer> path = new LinkedList<>();
-		int node = star;
-		while (node >= 0) {
-			path.add(0, node);
-			node = pred[node];
+		Node node = star;
+		while (node != null) {
+			path.add(0, node.node);
+			node = node.pred;
 		}
 		return path;
 	}
 	
 	public int solve() {
-		Queue<Edge> q = new LinkedList<>();
-		q.addAll(e[0]);
-		distTo[0] = 0;
-		pathTo[0] = 0;
-		pred[0] = -1;
-		while (! q.isEmpty()) {
-			Edge edge = q.poll();
-			if (distTo[edge.to] > distTo[edge.from] + edge.w) {
-				distTo[edge.to] = distTo[edge.from] + edge.w;
-				pathTo[edge.to] = pathTo[edge.from] + 1;
-				pred[edge.to] = edge.from;
-			}
-			if (pathTo[edge.to] > k) {
-				distTo[edge.to] = Integer.MAX_VALUE;
-			}
-			if (!seen[edge.to]) {
-				seen[edge.to] = true;
-				q.addAll(e[edge.to]);
+		PriorityQueue<Node> q = new PriorityQueue<>();
+		Node node = nodes[0];
+		node.dist = 0;
+		node.path = 0;
+		node.seen = true;
+		q.add(node);
+		
+		while (!q.isEmpty()) {
+			Node p = q.remove();
+			for (Edge ce : p.edges) {
+				Node c = ce.to;
+				if (c.dist > p.dist + ce.w) {
+					c.path = p.path + 1;
+					if (c.path > k) {
+						c.dist = Integer.MAX_VALUE;
+					}
+					else {
+						c.dist = p.dist + ce.w;
+					}
+					// make sure this gets re-inserted and evaluated
+					q.remove(c);
+					c.seen = false;
+				}
+				if (!c.seen) {
+					c.seen = true;
+					q.add(c);
+				}
 			}
 		}
-		if (distTo[star] < Integer.MAX_VALUE) {
-			return distTo[star];
+		
+		if (star.dist < Integer.MAX_VALUE) {
+			return star.dist;
 		}
 		return -1;
 	}
@@ -175,16 +201,16 @@ public class Solution {
 				pathmap[i][j] = ' ';
 			}
 		}
-		int node = star;
-		while (node > 0) {
-			int i = node/m;
-			int j = node % m;
+		Node node = star;
+		while (node != null) {
+			int i = node.node/m;
+			int j = node.node % m;
 			pathmap[i][j] = map[i][j];
-			node = pred[node];
+			node = node.pred;
 		}
 		printMap(pathmap);
 		System.out.println(path());
-		System.out.println(String.format("dist = %s, path = %s", distTo[star], pathTo[star]));
+		System.out.println(String.format("dist = %s, path = %s", star.dist, star.path));
 	}
 
 	public static void main(String[] args) {

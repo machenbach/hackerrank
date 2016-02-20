@@ -24,23 +24,6 @@ public class Solution2 {
 	}
 	
 	void addEdges(int i, int j, byte b) {
-		int node = node(i, j);
-		if (b == '*') {
-			star = node;
-			return;
-		}
-		if (i > 0) {
-			e[node].add(new Edge(node, node - m, b=='U' ? 0 : 1));
-		}
-		if (i < n-1) {
-			e[node].add(new Edge(node, node + m, b=='D' ? 0 : 1));
-		}
-		if (j > 0) {
-			e[node].add(new Edge(node, node - 1, b=='L' ? 0 : 1));
-		}
-		if (j < m - 1)  {
-			e[node].add(new Edge(node, node + 1, b=='R' ? 0 : 1));
-		}
 		
 	}
 	
@@ -79,9 +62,6 @@ public class Solution2 {
 	public int solve() {
 		for (int i = 0; i < m*n; i++) {
 			distTo[i][i] = 0;
-			for (Edge edge : e[i]) {
-				distTo[edge.to][edge.from] = edge.w;
-			}
 		}
 		
 		return -1;
