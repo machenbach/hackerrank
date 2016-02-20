@@ -65,7 +65,7 @@ public class Solution {
 	}
 	
 	byte fromTo(int n1, int n2) {
-		int diff = n2 - n2;
+		int diff = n2 - n1;
 		if (diff == 1) return 'R';
 		else if (diff == -1) return 'L';
 		else if (diff == m) return 'D';
@@ -177,10 +177,10 @@ public class Solution {
 		}
 		int node = star;
 		while (node > 0) {
-			node = pred[node];
 			int i = node/m;
 			int j = node % m;
 			pathmap[i][j] = map[i][j];
+			node = pred[node];
 		}
 		printMap(pathmap);
 		System.out.println(path());
