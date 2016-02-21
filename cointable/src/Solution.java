@@ -28,7 +28,7 @@ class Node implements Comparable<Node>{
 	}
 	@Override
 	public String toString() {
-		return Integer.toString(node);
+		return String.format("%s: p=%s, d=%s", node, path, dist);
 	}
 }
 
@@ -123,30 +123,19 @@ public class Solution {
 		
 		while (!q.isEmpty()) {
 			Node p = q.remove();
-			if (p.dist == Integer.MAX_VALUE) continue;
 			for (Edge ce : p.edges) {
 				Node c = ce.to;
-				if (c.dist > p.dist + ce.w) {
+				if ((p.path < k - 1 ||  c == star) && c.dist > p.dist + ce.w ) {
 					c.path = p.path + 1;
 					c.pred = p;
-					if (c.path > k) {
-						c.dist = Integer.MAX_VALUE;
-						c.path = 0;
-						c.seen = false;
+					c.dist = p.dist + ce.w;
+					// if we've seen this, we have to remove it from the q to have
+					// the priority reevaluated
+					if (c.seen) {
 						q.remove(c);
 					}
-					else {
-						c.dist = p.dist + ce.w;
-						// if we've seen this, we have to remove it from the q to have
-						// the priority revaluated
-						if (c.seen) {
-							q.remove(c);
-						}
-						c.seen = true;
-						q.add(c);
-						
-					}
-					// make sure this gets re-inserted and evaluated
+					c.seen = true;
+					q.add(c);
 				}
 			}
 		}
@@ -157,7 +146,6 @@ public class Solution {
 		return -1;
 	}
 	
-
 	public static void main(String[] args) {
 		Solution s = new Solution();
 		try {
