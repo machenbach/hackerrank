@@ -131,17 +131,22 @@ public class Solution {
 					c.pred = p;
 					if (c.path > k) {
 						c.dist = Integer.MAX_VALUE;
+						c.path = 0;
+						c.seen = false;
+						q.remove(c);
 					}
 					else {
 						c.dist = p.dist + ce.w;
+						// if we've seen this, we have to remove it from the q to have
+						// the priority revaluated
+						if (c.seen) {
+							q.remove(c);
+						}
+						c.seen = true;
+						q.add(c);
+						
 					}
 					// make sure this gets re-inserted and evaluated
-					q.remove(c);
-					c.seen = false;
-				}
-				if (!c.seen) {
-					c.seen = true;
-					q.add(c);
 				}
 			}
 		}
