@@ -1,11 +1,12 @@
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.function.Supplier;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 class AddKey {
@@ -50,12 +51,16 @@ class AddKey {
 		return true;
 	}
 	
+	@Override
+	public String toString() {
+		return String.format("%s : %s : %s", sum, p, d);
+	}
 }
 
 public class Solution {
 	int N, K;
 	List<Long> sums;
-	Map<AddKey, Integer> sumCount; 
+	Map<AddKey, Set<List<Long>>> sumCount; 
 	
 	public Solution(int N, int K, String s) {
 		this.N = N;
@@ -73,35 +78,46 @@ public class Solution {
 	}
 	
 	// count the number of ways given the elements in p to add to sum, with d numbers
-	int countSums(long sum, List<Long> p, int d) {
+	Set<List<Long>> countSums(long sum, List<Long> p, int d) {
 		AddKey key = new AddKey(sum, p, d);
 		if (sumCount.containsKey(key)) {
 			return sumCount.get(key);
 		}
-		if (sum < 0) {
-			return 0;
+		if (d == 0) {
+			new ArrayList<>();
 		}
-		if (sum == 0) {
-			return 1;
+		if (sum < 0) {
+			new ArrayList<>();
 		}
 		
+		Set<List<Long>> res = new HashSet<>();
+
 		if (p.size() <= d) {
-			int tot = 0;
 			long psum = p.stream().mapToLong(l -> l).sum();
 			if (psum == sum) {
-				tot = 1;
+				res.add(new ArrayList<>(p));
 			}
-			return tot;
+			return res;
 		}
-		int tot = 0;
+		
 		for (int i = 0; i < p.size(); i++) {
 			long l = p.get(i);
 			List<Long> np = new ArrayList<Long>(p);
-			np.remove(i);			
-			tot += (countSums(sum - l, np, d - 1) + countSums(sum, np, d));
+			np.remove(i);
+			if (sum == l) {
+				res.add(new ArrayList<>(Collections.singleton(l)));
+			}
+			else {
+				Set<List<Long>> ll = countSums(sum - l, np, d - 1);
+				for (List<Long> lls : ll) {
+					lls.add(l);
+					Collections.sort(lls);
+				}
+				res.addAll(ll);
+			}
+			res.addAll(countSums(sum, np, d));
 		}
-		sumCount.put(key, tot);
-		return tot;
+		return res;
 	}
 	
 	
@@ -117,13 +133,13 @@ public class Solution {
 		
 		for (int i = 0; i < a.size(); i++) {
 			long s = a.get(i) * K;
-			int cnt = countSums(s, a, K);
-			for (int c = 0; c < cnt; c++) {
-				a.remove(i);
+			System.out.println("Sums: " + new AddKey(s, a, K));
+			Set<List<Long>> allSums = countSums(s, a, K);
+			for (List<Long> ll : allSums) {
+				System.out.println(ll);
 			}
-			if (cnt != 0 && s == a.get(i) * K) {
-				i++;
-			}
+			
+			System.out.println("====");
 		}
 		return a;
 	}
