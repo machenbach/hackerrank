@@ -110,10 +110,12 @@ public class Solution {
 			else {
 				Set<List<Long>> ll = countSums(sum - l, np, d - 1);
 				for (List<Long> lls : ll) {
-					lls.add(l);
+					if (!lls.isEmpty()) {
+						lls.add(l);
+					}
 					Collections.sort(lls);
+					res.add(lls);
 				}
-				res.addAll(ll);
 			}
 			res.addAll(countSums(sum, np, d));
 		}
@@ -126,13 +128,13 @@ public class Solution {
 	}
 	
 	public List<Long> solve() {
+		System.out.println("Start test " + sums);
 		List<Long> a = possibleSequence();
 		if (a.size() == N) {
 			return a;
 		}
 		
-		for (int i = 0; i < a.size(); i++) {
-			long s = a.get(i) * K;
+		for (long s : sums) {
 			System.out.println("Sums: " + new AddKey(s, a, K));
 			Set<List<Long>> allSums = countSums(s, a, K);
 			for (List<Long> ll : allSums) {
