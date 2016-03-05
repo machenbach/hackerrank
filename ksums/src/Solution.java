@@ -84,10 +84,10 @@ public class Solution {
 			return sumCount.get(key);
 		}
 		if (d == 0) {
-			new ArrayList<>();
+			return new HashSet<>();
 		}
 		if (sum < 0) {
-			new ArrayList<>();
+			return new HashSet<>();
 		}
 		
 		Set<List<Long>> res = new HashSet<>();
@@ -97,6 +97,7 @@ public class Solution {
 			if (psum == sum) {
 				res.add(new ArrayList<>(p));
 			}
+			sumCount.put(key, res);
 			return res;
 		}
 		
@@ -104,21 +105,26 @@ public class Solution {
 			long l = p.get(i);
 			List<Long> np = new ArrayList<Long>(p);
 			np.remove(i);
-			if (sum == l) {
+			if (sum == l && d == 1) {
 				res.add(new ArrayList<>(Collections.singleton(l)));
 			}
 			else {
 				Set<List<Long>> ll = countSums(sum - l, np, d - 1);
 				for (List<Long> lls : ll) {
 					if (!lls.isEmpty()) {
-						lls.add(l);
+						List<Long> llc = new ArrayList<>(lls);
+						llc.add(l);
+						Collections.sort(llc);
+						res.add(llc);
 					}
-					Collections.sort(lls);
-					res.add(lls);
 				}
 			}
-			res.addAll(countSums(sum, np, d));
+			for (List<Long> lls : countSums(sum, np, d)) {
+				res.add(new ArrayList<>(lls));
+			}
 		}
+		
+		sumCount.put(key, res);
 		return res;
 	}
 	
