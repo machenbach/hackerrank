@@ -1,93 +1,39 @@
 import java.math.BigInteger;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Scanner;
-
-class Key {
-	String prefix;
-	String remaining;
-	int k;
-	
-	public Key(String prefix, String remaining, int k) {
-		this.prefix = prefix;
-		this.remaining = remaining;
-		this.k = k;
-	}
-
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + k;
-		result = prime * result + ((prefix == null) ? 0 : prefix.hashCode());
-		result = prime * result + ((remaining == null) ? 0 : remaining.hashCode());
-		return result;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		Key other = (Key) obj;
-		if (k != other.k)
-			return false;
-		if (prefix == null) {
-			if (other.prefix != null)
-				return false;
-		} else if (!prefix.equals(other.prefix))
-			return false;
-		if (remaining == null) {
-			if (other.remaining != null)
-				return false;
-		} else if (!remaining.equals(other.remaining))
-			return false;
-		return true;
-	}
-	
-}
-
 
 public class Solution {
 	
-	boolean isSquare(String s) {
-		if (s.length() % 2 != 0) {
-			return false;
-		}
-		int m = s.length()/2;
-		return s.substring(0, m).equals(s.substring(m));
-	}
-	
-	Map<Key, BigInteger> calls = new HashMap<>();
-	
-	public BigInteger countSquares(String prefix, String remaining, int k) {
-		Key key = new Key(prefix, remaining, k);
-		if (calls.containsKey(key)) {
-			return calls.get(key);
-		}
-		if (k == 0) {
-			return isSquare(prefix) ? BigInteger.ONE : BigInteger.ZERO;
-		}
-		if (remaining.length() == 0) {
-			return BigInteger.ZERO;
-		}
-		BigInteger res = countSquares(prefix + remaining.charAt(0), remaining.substring(1), k-1);
-		res = res.add(countSquares(prefix, remaining.substring(1), k));
-		calls.put(key, res);
-		return res;
-	}
+	BigInteger[][] seqs;
 	
 	public BigInteger countSquares(String s) {
-		BigInteger res = BigInteger.ZERO;
-		for (int k = s.length() % 2 == 0 ? s.length() : s.length() - 1; k >= 2; k -= 2) {
-			res = res.add(countSquares("", s, k));
+		// init arrays
+		seqs = new BigInteger[s.length()+1][s.length() + 1];
+		for (int i = 0; i <= s.length(); i++) {
+			seqs[0][i] = BigInteger.ZERO;
+			seqs[i][0] = BigInteger.ZERO;
 		}
-		return res;
+		
+		for (int i = 1; i <= s.length(); i++) {
+			for (int j = 1; j <= s.length(); j++) {
+				if (s.charAt(i-1) == s.charAt(j-1)) {
+					seqs[i][j] = BigInteger.ONE.add(seqs[i-1][j]).add(seqs[i][j-1]);
+				}
+				else {
+					seqs[i][j] = seqs[i][j-1];
+				}
+			}
+		}
+		
+		for (int i = 0; i <= s.length(); i++) {
+			for (int j = 0; j <= s.length(); j++) {
+				System.out.print(String.format("%3s", seqs[i][j]));
+			}
+			System.out.println();
+		}
+		return seqs[s.length()][s.length()];
 	}
-
+	
+	
 	public static void main(String[] args) {
 		Scanner in = new Scanner(System.in);
 		int T = in.nextInt();
