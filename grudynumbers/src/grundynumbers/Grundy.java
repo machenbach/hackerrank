@@ -14,20 +14,16 @@ public class Grundy {
 	public Grundy() {
 		g = new int[1000];
 		Arrays.fill(g, -1);
-		primes = IntStream.of(2, 3, 5, 7, 11, 13).boxed().collect(Collectors.toSet());
 	}
 	
 	int grundy(int num) {
-		if (g[num] >= 0) {
-			return g[num];
+		if (g[num] < 0) {
+			Set<Integer> n = IntStream.of(2, 3, 5, 7, 11, 13).
+								filter(x -> num >= x).
+								map(x -> grundy(num - x)).
+								boxed().collect(Collectors.toSet());
+			g[num] = n.isEmpty() ? 0 : IntStream.range(0,  Collections.max(n) + 2).filter(x -> !n.contains(x)).min().getAsInt();
 		}
-		
-		Set<Integer> n = primes.stream().map(x -> num - x).filter(x -> x >= 0).collect(Collectors.toSet());
-		Set<Integer> r = IntStream.range(0,  num+1).boxed().collect(Collectors.toSet());
-		for (int i : n) {
-			r.remove(grundy(i));
-		}
-		g[num] = Collections.min(r);
 		return g[num];
 	}
 
